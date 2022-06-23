@@ -3,14 +3,22 @@ name: "26F Studio Development CI"
 on:
   workflow_dispatch:
     inputs:
-      name:
-        description: 'Person to greet'
-        default: 'World'
+      repository:
+        description: "Target repository (Owner/Repo)"
+        required: true
+      build_type:
+        description: "Build type (Would be used by accessing assets)"
+        required: true
+      info_keys:
+        description: "Keys of the info used in the steps"
         required: true
 
 jobs:
-  greet:
+  check-inputs:
     runs-on: ubuntu-latest
     steps:
-    - name: Send greeting
-      run: echo "Hello ${{ github.event.inputs.name }}"
+      - name: Display inputs
+        run: |
+          echo repository: ${{ github.event.inputs.repository }}
+          echo build_type: ${{ github.event.inputs.build_type }}
+          echo info_keys: ${{ github.event.inputs.info_keys }}
