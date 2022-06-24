@@ -6,13 +6,21 @@ on:
       repository:
         description: "Target repository (Owner/Repo)"
         required: true
+      ref:
+        description: "The branch, tag or SHA to checkout"
+        required: false
+        default: ""
       buildType:
         description: "Build type (Would be used by accessing assets)"
         required: true
+      buildList:
+        description: "List of folders and files to be built (seperate by spaces)"
+        required: false
+        default: "./*"
       packageName:
         description: "Base name of the package"
         required: false
-        default: "LoveApp"
+        default: "Love_App"
       versionName:
         description: "Custom name for the version"
         required: false
@@ -26,6 +34,9 @@ on:
         required: false
         default: "1"
 
+env:
+  SOURCE_DIR: ./src/
+
 jobs:
   check-inputs:
     runs-on: ubuntu-latest
@@ -34,37 +45,73 @@ jobs:
         run: |
           echo repository: ${{ github.event.inputs.repository }}
           echo buildType: ${{ github.event.inputs.buildType }}
+          echo buildList: ${{ github.event.inputs.buildList }}
           echo packageName: ${{ github.event.inputs.packageName }}
           echo versionName: ${{ github.event.inputs.versionName }}
           echo versionString: ${{ github.event.inputs.versionString }}
           echo versionCode: ${{ github.event.inputs.versionCode }}
-      - uses: actions/checkout@v3
+
+  cache-love:
+    runs-on: ubuntu-latest
+    needs: check-inputs
+    steps:
+      - name: Initialize CI
+        uses: actions/checkout@v3
+      - name: Clone target repository
+        uses: actions/checkout@v3
         with:
           repository: ${{ github.event.inputs.repository }}
-  # automatic-test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         submodules: "recursive"
-  #     - uses: ./.github/actions/automatic-test
+          ref: ${{ github.event.inputs.ref }}
+          submodules: "recursive"
+          path: 'src'
+      - name: Build love package
+        uses: ./.github/actions/build-bare
+        with:
+          buildList: ${{ github.event.inputs.buildList }}
 
+  # auto-test:
+  #   runs-on: ubuntu-latest
+  #   needs: check-inputs
+  #   steps:
+  #     - name: Initialize CI
+  #       uses: actions/checkout@v3
+  #     - name: Clone target repository
+  #       uses: actions/checkout@v3
+  #       with:
+  #         repository: ${{ github.event.inputs.repository }}
+  #         ref: ${{ github.event.inputs.ref }}
+  #         submodules: "recursive"
+  #         path: 'src'
+  #     - name: Run auto tests
+  #       uses: ./.github/actions/auto-test
+  
   # build-windows:
   #   runs-on: windows-latest
-  #   needs: get-info
+  #   needs: check-inputs
   #   env:
-  #     PACKAGE_NAME: ./Techmino_Galaxy_${{ needs.get-info.outputs.name }}_${{ needs.get-info.outputs.commit }}_#${{ GITHUB.RUN_NUMBER }}_Windows.zip
+  #     PACKAGE_NAME: ./{{ github.event.inputs.package_name }}_Windows.zip
   #   outputs:
   #     download_url: ${{ steps.transfer.outputs.download_url }}
   #   steps:
-  #     - uses: actions/checkout@v2
+  #     - name: Initialize CI
+  #       uses: actions/checkout@v3
+  #     - name: Clone target repository
+  #       uses: actions/checkout@v3
   #       with:
+  #         repository: ${{ github.event.inputs.repository }}
+  #         ref: ${{ github.event.inputs.ref }}
   #         submodules: "recursive"
-  #     - uses: ./.github/actions/build-windows
+  #         path: ${{ env.SOURCE_DIR }}
+  #     - name: Build bare package
+  #       uses: ./.github/actions/build-love
   #       with:
+  #         source: ${{ env.SOURCE_DIR }}
+  #     - name: Build Windows package
+  #       uses: ./.github/actions/build-windows
+  #       with:
+  #         buildType: ${{ github.event.inputs.buildType }}
+  #         versionString: ${{ github.event.inputs.versionString }}
   #         output: ${{ env.PACKAGE_NAME }}
-  #         version: ${{ needs.get-info.outputs.name }}
-  #         icon: ./.github/build/Windows/snapshot.ico
   #     - name: Get transfer
   #       uses: ./.github/actions/get-unzip
   #       with:
@@ -216,7 +263,7 @@ jobs:
   #   runs-on: ubuntu-latest
   #   if: ${{ always() }}
   #   needs:
-  #     [get-info, automatic-test, build-windows, build-linux, build-android, build-love]
+  #     [get-info, auto-test, build-windows, build-linux, build-android, build-love]
   #   steps:
   #     - name: Discord Message
   #       uses: Sniddl/discord-commits@v1.3
@@ -224,4 +271,3 @@ jobs:
   #         webhook: ${{ secrets.DISCORD_WEBHOOK }}
   #         message: "Github action's result report from **${{ github.repository }}**."
   #         embed: '{"author":{"name":"Techmino Galaxy [Snapshot]","url":"https://github.com/${{ github.repository }}"},"title":"CI #${{ GITHUB.RUN_NUMBER }} Result [Develop]","description":"Here is the result of the CI triggered by commit `${{ needs.get-info.outputs.commit }}`","url":"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}","thumbnail":{"url":"https://raw.githubusercontent.com/26F-Studio/Techmino_Galaxy/main/.github/build/Linux/snapshot.png"},"color":36863,"fields":[{"name":"Version","value":"${{ needs.get-info.outputs.name }}"},{"name":"Changelog","value":"${{ github.event.commits[0].message }}"},{"name":"Status","value":"**Automatic Test:** ${{ needs.automatic-test.result }}\n**Windows:** ${{ needs.build-windows.result }}\n**Linux:** ${{ needs.build-linux.result }}\n**Android:** ${{ needs.build-android.result }}\n**Bare:** ${{ needs.build-love.result }}"},{"name":"Download Links","value":"**Windows:** ${{ needs.build-windows.outputs.download_url }}\n**Linux:** ${{ needs.build-linux.outputs.download_url }}\n**Android:** ${{ needs.build-android.outputs.download_url }}\n**Bare:** ${{ needs.build-love.outputs.download_url}}"}]}'
-

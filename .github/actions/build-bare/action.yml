@@ -1,0 +1,24 @@
+name: 'Build Bare'
+description: 'Build bare love file'
+inputs:
+  sourceDir:
+    required: true
+    description: 'Root folder of the sources'
+  buildList:
+    required: true
+    description: 'List of folders and files to be built'
+  output:
+    required: false
+    description: 'Output path and name of the product'
+    default: ./Techmino_Galaxy.love
+runs:
+  using: "composite"
+  steps:
+    - name: Pack love file
+      shell: bash
+      run: |
+        pushd ${{ inputs.sourceDir }}
+        7z a -tzip ${{ inputs.output }} ${{ inputs.buildList }}
+        popd
+        mv ${{ inputs.sourceDir }}${{ inputs.output }} ${{ inputs.output }}
+        ls -l
