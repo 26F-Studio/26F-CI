@@ -99,7 +99,7 @@ jobs:
           path: ./target.love
           key: ${{ github.event.inputs.packageName }}_Cache
       - name: Build love package
-        if: ${{ steps.cache-love.outputs.cache-hit == 'false' }}
+        if: steps.cache-love.outputs.cache-hit == 'false'
         uses: ./.github/actions/build-bare
         with:
           sourceDir: ${{ env.SOURCE_DIR }}
