@@ -1,6 +1,9 @@
 name: 'Love2D Auto Test'
 description: 'Check for obvious errors.'
-
+inputs:
+  sourceDir:
+    required: true
+    description: 'Root folder of the sources'
 runs:
   using: "composite"
   steps:
@@ -11,7 +14,7 @@ runs:
   - name: Check all lua files are valid
     shell: lua {0}
     run: |
-      local files = assert(io.popen "find ./src/ -name '*.lua' -not -path '*/.git/*'")
+      local files = assert(io.popen "find ${{ inputs.sourceDir }} -name '*.lua' -not -path '*/.git/*'")
       local errors = 0
       for file in files:lines() do
         local f, error = loadfile(file)

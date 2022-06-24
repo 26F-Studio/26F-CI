@@ -10,6 +10,10 @@ on:
         description: "The branch, tag or SHA to checkout"
         required: false
         default: ""
+      appName:
+        description: "App name (Would be used in description files)"
+        required: false
+        default: "Love_App"
       buildType:
         description: "Build type (Would be used by accessing assets)"
         required: true
@@ -51,7 +55,7 @@ jobs:
           echo versionString: ${{ github.event.inputs.versionString }}
           echo versionCode: ${{ github.event.inputs.versionCode }}
 
-  cache-love:
+  auto-test:
     runs-on: ubuntu-latest
     needs: check-inputs
     steps:
@@ -63,65 +67,58 @@ jobs:
           repository: ${{ github.event.inputs.repository }}
           ref: ${{ github.event.inputs.ref }}
           submodules: "recursive"
-          path: 'src'
+          path: ${{ env.SOURCE_DIR }}
+      - name: Run auto tests
+        uses: ./.github/actions/auto-test
+        with:
+          sourceDir: ${{ env.SOURCE_DIR }}
+
+  build-windows:
+    runs-on: windows-latest
+    needs: cache-love
+    env:
+      PACKAGE_NAME: ./{{ github.event.inputs.package_name }}_Windows.zip
+    outputs:
+      download_url: ${{ steps.transfer.outputs.download_url }}
+    steps:
+      - name: Initialize CI
+        uses: actions/checkout@v3
+      - name: Clone target repository
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.event.inputs.repository }}
+          ref: ${{ github.event.inputs.ref }}
+          submodules: "recursive"
+          path: ${{ env.SOURCE_DIR }}
+      - name: Cache love package
+        id: cache-love
+        uses: actions/cache@v3
+        with:
+          path: ./target.love
+          key: ${{ github.event.inputs.packageName }}_Cache
       - name: Build love package
+        if: ${{ steps.cache-love.outputs.cache-hit == 'false' }}
         uses: ./.github/actions/build-bare
         with:
           sourceDir: ${{ env.SOURCE_DIR }}
           buildList: ${{ github.event.inputs.buildList }}
-
-  # auto-test:
-  #   runs-on: ubuntu-latest
-  #   needs: check-inputs
-  #   steps:
-  #     - name: Initialize CI
-  #       uses: actions/checkout@v3
-  #     - name: Clone target repository
-  #       uses: actions/checkout@v3
-  #       with:
-  #         repository: ${{ github.event.inputs.repository }}
-  #         ref: ${{ github.event.inputs.ref }}
-  #         submodules: "recursive"
-  #         path: 'src'
-  #     - name: Run auto tests
-  #       uses: ./.github/actions/auto-test
-  
-  # build-windows:
-  #   runs-on: windows-latest
-  #   needs: check-inputs
-  #   env:
-  #     PACKAGE_NAME: ./{{ github.event.inputs.package_name }}_Windows.zip
-  #   outputs:
-  #     download_url: ${{ steps.transfer.outputs.download_url }}
-  #   steps:
-  #     - name: Initialize CI
-  #       uses: actions/checkout@v3
-  #     - name: Clone target repository
-  #       uses: actions/checkout@v3
-  #       with:
-  #         repository: ${{ github.event.inputs.repository }}
-  #         ref: ${{ github.event.inputs.ref }}
-  #         submodules: "recursive"
-  #         path: ${{ env.SOURCE_DIR }}
-  #     - name: Build bare package
-  #       uses: ./.github/actions/build-love
-  #       with:
-  #         source: ${{ env.SOURCE_DIR }}
-  #     - name: Build Windows package
-  #       uses: ./.github/actions/build-windows
-  #       with:
-  #         buildType: ${{ github.event.inputs.buildType }}
-  #         versionString: ${{ github.event.inputs.versionString }}
-  #         output: ${{ env.PACKAGE_NAME }}
-  #     - name: Get transfer
-  #       uses: ./.github/actions/get-unzip
-  #       with:
-  #         url: https://github.com/Mikubill/transfer/releases/download/v0.4.17/transfer_0.4.17_windows_amd64.zip
-  #     - name: Upload to WeTransfer
-  #       id: transfer
-  #       run: |
-  #         ./transfer.exe wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
-  #         echo "::set-output name=download_url::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
+      - name: Build Windows package
+        uses: ./.github/actions/build-windows
+        with:
+          sourceDir: ${{ env.SOURCE_DIR }}
+          appName: ${{ github.event.inputs.appName }}
+          buildType: ${{ github.event.inputs.buildType }}
+          versionString: ${{ github.event.inputs.versionString }}
+          output: ${{ env.PACKAGE_NAME }}
+      - name: Get transfer
+        uses: ./.github/actions/get-unzip
+        with:
+          url: https://github.com/Mikubill/transfer/releases/download/v0.4.17/transfer_0.4.17_windows_amd64.zip
+      - name: Upload to WeTransfer
+        id: transfer
+        run: |
+          ./transfer.exe wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
+          echo "::set-output name=download_url::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
 
   # build-linux:
   #   runs-on: ubuntu-latest
@@ -272,3 +269,9 @@ jobs:
   #         webhook: ${{ secrets.DISCORD_WEBHOOK }}
   #         message: "Github action's result report from **${{ github.repository }}**."
   #         embed: '{"author":{"name":"Techmino Galaxy [Snapshot]","url":"https://github.com/${{ github.repository }}"},"title":"CI #${{ GITHUB.RUN_NUMBER }} Result [Develop]","description":"Here is the result of the CI triggered by commit `${{ needs.get-info.outputs.commit }}`","url":"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}","thumbnail":{"url":"https://raw.githubusercontent.com/26F-Studio/Techmino_Galaxy/main/.github/build/Linux/snapshot.png"},"color":36863,"fields":[{"name":"Version","value":"${{ needs.get-info.outputs.name }}"},{"name":"Changelog","value":"${{ github.event.commits[0].message }}"},{"name":"Status","value":"**Automatic Test:** ${{ needs.automatic-test.result }}\n**Windows:** ${{ needs.build-windows.result }}\n**Linux:** ${{ needs.build-linux.result }}\n**Android:** ${{ needs.build-android.result }}\n**Bare:** ${{ needs.build-love.result }}"},{"name":"Download Links","value":"**Windows:** ${{ needs.build-windows.outputs.download_url }}\n**Linux:** ${{ needs.build-linux.outputs.download_url }}\n**Android:** ${{ needs.build-android.outputs.download_url }}\n**Bare:** ${{ needs.build-love.outputs.download_url}}"}]}'
+  # - name: A/B Check
+  #   if: ${{ envA }} != ${{ envB }}
+  #   uses: actions/github-script@v3
+  #   with:
+  #     script: |
+  #       core.setFailed('envA and envB are not equivalent!')

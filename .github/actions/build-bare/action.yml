@@ -10,7 +10,7 @@ inputs:
   output:
     required: false
     description: 'Output path and name of the product'
-    default: ./Techmino_Galaxy.love
+    default: ./target.love
 runs:
   using: "composite"
   steps:
@@ -20,5 +20,4 @@ runs:
         pushd ${{ inputs.sourceDir }}
         7z a -tzip ${{ inputs.output }} ${{ inputs.buildList }}
         popd
-        mv ${{ inputs.sourceDir }}${{ inputs.output }} ${{ inputs.output }}
-        ls -l
+        mv ${{ inputs.sourceDir }}/${{ inputs.output }} ${{ inputs.output }}

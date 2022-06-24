@@ -1,5 +1,7 @@
 {
     "repository": "${{ github.repository }}",
+    "ref": "remote-test",
+    "appName": "${{ needs.get-info.outputs.appName }}",
     "buildType": "dev",
     "buildList": "./assets/ ./Zenitha/ ./conf.lua ./main.lua ./version.lua",
     "packageName": "Techmino_Galaxy_${{ needs.get-info.outputs.versionName }}_${{ needs.get-info.outputs.commitHash }}_#${{ GITHUB.RUN_NUMBER }}",
