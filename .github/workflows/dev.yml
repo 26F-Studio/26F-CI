@@ -75,7 +75,7 @@ jobs:
 
   build-windows:
     runs-on: windows-latest
-    needs: cache-love
+    needs: check-inputs
     env:
       PACKAGE_NAME: ./{{ github.event.inputs.package_name }}_Windows.zip
     outputs:
