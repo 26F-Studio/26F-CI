@@ -48,6 +48,8 @@ jobs:
       - name: Display inputs
         run: |
           echo repository: ${{ github.event.inputs.repository }}
+          echo ref: ${{ github.event.inputs.ref }}
+          echo appName: ${{ github.event.inputs.appName }}
           echo buildType: ${{ github.event.inputs.buildType }}
           echo buildList: ${{ github.event.inputs.buildList }}
           echo packageName: ${{ github.event.inputs.packageName }}
