@@ -67,6 +67,7 @@ jobs:
       - name: Build love package
         uses: ./.github/actions/build-bare
         with:
+          sourceDir: ${{ env.SOURCE_DIR }}
           buildList: ${{ github.event.inputs.buildList }}
 
   # auto-test:
