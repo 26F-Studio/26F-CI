@@ -47,15 +47,15 @@ jobs:
     steps:
       - name: Display inputs
         run: |
-          echo repository: ${{ github.event.inputs.repository }}
-          echo ref: ${{ github.event.inputs.ref }}
-          echo appName: ${{ github.event.inputs.appName }}
-          echo buildType: ${{ github.event.inputs.buildType }}
-          echo buildList: ${{ github.event.inputs.buildList }}
-          echo packageName: ${{ github.event.inputs.packageName }}
-          echo versionName: ${{ github.event.inputs.versionName }}
-          echo versionString: ${{ github.event.inputs.versionString }}
-          echo versionCode: ${{ github.event.inputs.versionCode }}
+          echo "::notice::repository: ${{ github.event.inputs.repository }}"
+          echo "::notice::ref: ${{ github.event.inputs.ref }}"
+          echo "::notice::appName: ${{ github.event.inputs.appName }}"
+          echo "::notice::buildType: ${{ github.event.inputs.buildType }}"
+          echo "::notice::buildList: ${{ github.event.inputs.buildList }}"
+          echo "::notice::packageName: ${{ github.event.inputs.packageName }}"
+          echo "::notice::versionName: ${{ github.event.inputs.versionName }}"
+          echo "::notice::versionString: ${{ github.event.inputs.versionString }}"
+          echo "::notice::versionCode: ${{ github.event.inputs.versionCode }}"
 
   auto-test:
     runs-on: ubuntu-latest
