@@ -7,10 +7,6 @@ inputs:
   buildList:
     required: true
     description: 'List of folders and files to be built'
-  output:
-    required: false
-    description: 'Output path and name of the product'
-    default: ./target.love
 runs:
   using: "composite"
   steps:
@@ -20,4 +16,4 @@ runs:
         pushd ${{ inputs.sourceDir }}
         7z a -tzip ${{ inputs.output }} ${{ inputs.buildList }}
         popd
-        mv ${{ inputs.sourceDir }}/${{ inputs.output }} ${{ inputs.output }}
+        mv ${{ inputs.sourceDir }}/${{ inputs.output }} ./target.love
