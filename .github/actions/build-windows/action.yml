@@ -35,7 +35,7 @@ runs:
       run: |
         Version = '${{ inputs.versionString }}'
         FileVersion = (f"{Version.replace('.', ',')},0")
-        with open('${{ inputs.sourceDir }}/.github/build/windows/${{ inputs.buildType }}/template.rc', 'r', encoding='utf8') as file:
+        with open('${{ inputs.sourceDir }}/.github/build/Windows/${{ inputs.buildType }}/template.rc', 'r', encoding='utf8') as file:
           data = file.read()
           data = data\
             .replace('@FileVersion', FileVersion)\
@@ -45,7 +45,7 @@ runs:
     - name: Pack product folder
       shell: pwsh
       run: |
-        cp ${{ inputs.sourceDir }}/.github/build/windows/${{ inputs.buildType }}/icon.ico .\icon.ico
+        cp ${{ inputs.sourceDir }}/.github/build/Windows/${{ inputs.buildType }}/icon.ico .\icon.ico
         cmd /c copy /b .\love\love.exe + .\target.love .\love\${{ inputs.appName }}.exe
         del .\love\love.exe
         del .\love\lovec.exe
