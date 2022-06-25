@@ -63,7 +63,14 @@ jobs:
     steps:
       - name: Initialize CI
         uses: actions/checkout@v3
+      - name: Cache love package
+        id: cache-love
+        uses: actions/cache@v2
+        with:
+          path: ./target.love
+          key: love-cache-${{ GITHUB.RUN_NUMBER }}
       - name: Clone target repository
+        if: ${{ steps.cache-love.outputs.cace-hit }} != 'true'
         uses: actions/checkout@v3
         with:
           repository: ${{ github.event.inputs.repository }}
@@ -71,15 +78,11 @@ jobs:
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
       - name: Build love package
+        if: ${{ steps.cache-love.outputs.cace-hit }} != 'true'
         uses: ./.github/actions/build-bare
         with:
           sourceDir: ${{ env.SOURCE_DIR }}
           buildList: ${{ github.event.inputs.buildList }}
-      - name: Save love package cache
-        uses: actions/cache@v2
-        with:
-          path: ./target.love
-          key: ${{ github.event.inputs.packageName }}_Cache
 
   auto-test:
     runs-on: ubuntu-latest
@@ -121,7 +124,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ./target.love
-          key: ${{ github.event.inputs.packageName }}_Cache
+          key: love-cache-${{ GITHUB.RUN_NUMBER }}
       - name: Build Windows package
         uses: ./.github/actions/build-windows
         with:
@@ -162,7 +165,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ./target.love
-          key: ${{ github.event.inputs.packageName }}_Cache
+          key: love-cache-${{ GITHUB.RUN_NUMBER }}
       - name: Build Linux package
         uses: ./.github/actions/build-linux
         with:
@@ -199,7 +202,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ./target.love
-          key: ${{ github.event.inputs.packageName }}_Cache
+          key: love-cache-${{ GITHUB.RUN_NUMBER }}
       - name: Build Android package
         uses: ./.github/actions/build-android
         with:
