@@ -127,7 +127,7 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
-    needs: get-info
+    needs: check-inputs
     env:
       PACKAGE_NAME: ./${{ github.event.inputs.package_name }}_Linux.AppImage
     outputs:
