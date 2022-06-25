@@ -79,9 +79,9 @@ jobs:
     runs-on: windows-latest
     needs: check-inputs
     env:
-      PACKAGE_NAME: ./${{ github.event.inputs.package_name }}_Windows.zip
+      PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_Windows.zip
     outputs:
-      download_url: ${{ steps.transfer.outputs.download_url }}
+      downloadUrl: ${{ steps.transfer.outputs.downloadUrl }}
     steps:
       - name: Initialize CI
         uses: actions/checkout@v3
@@ -120,15 +120,15 @@ jobs:
         id: transfer
         run: |
           ./transfer.exe wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
-          echo "::set-output name=download_url::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
+          echo "::set-output name=downloadUrl::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
 
   build-linux:
     runs-on: ubuntu-latest
     needs: check-inputs
     env:
-      PACKAGE_NAME: ./${{ github.event.inputs.package_name }}_Linux.AppImage
+      PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_Linux.AppImage
     outputs:
-      download_url: ${{ steps.transfer.outputs.download_url }}
+      downloadUrl: ${{ steps.transfer.outputs.downloadUrl }}
     steps:
       - name: Initialize CI
         uses: actions/checkout@v3
@@ -163,15 +163,15 @@ jobs:
         run: |
           curl -fsSL git.io/file-transfer | sh
           ./transfer wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
-          echo "::set-output name=download_url::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
+          echo "::set-output name=downloadUrl::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
 
   build-android:
     runs-on: ubuntu-latest
     needs: check-inputs
     env:
-      PACKAGE_NAME: ./${{ github.event.inputs.package_name }}_Android.apk
+      PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_Android.apk
     outputs:
-      download_url: ${{ steps.transfer.outputs.download_url }}
+      downloadUrl: ${{ steps.transfer.outputs.downloadUrl }}
     steps:
       - name: Initialize CI
         uses: actions/checkout@v3
@@ -212,7 +212,7 @@ jobs:
         run: |
           curl -fsSL git.io/file-transfer | sh
           ./transfer wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
-          echo "::set-output name=download_url::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
+          echo "::set-output name=downloadUrl::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
 
   # build-macOS:
   #   runs-on: macos-latest
@@ -283,9 +283,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: check-inputs
     env:
-      PACKAGE_NAME: ./${{ github.event.inputs.package_name }}_Bare.love
+      PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_Bare.love
     outputs:
-      download_url: ${{ steps.transfer.outputs.download_url }}
+      downloadUrl: ${{ steps.transfer.outputs.downloadUrl }}
     steps:
       - name: Initialize CI
         uses: actions/checkout@v3
@@ -316,7 +316,7 @@ jobs:
         run: |
           curl -fsSL git.io/file-transfer | sh
           ./transfer wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
-          echo "::set-output name=download_url::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
+          echo "::set-output name=downloadUrl::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
 
   discord-report:
     runs-on: ubuntu-latest
@@ -343,7 +343,7 @@ jobs:
             "fields":[
             {"name":"Version","value":"${{ github.event.inputs.versionString }}"},
             {"name":"Status","value":"**Automatic Test:** ${{ needs.auto-test.result }}\n**Windows:** ${{ needs.build-windows.result }}\n**Linux:** ${{ needs.build-linux.result }}\n**Android:** ${{ needs.build-android.result }}\n**Bare:** ${{ needs.build-love.result }}"},
-            {"name":"Download Links","value":"**Windows:** ${{ needs.build-windows.outputs.download_url }}\n**Linux:** ${{ needs.build-linux.outputs.download_url }}\n**Android:** ${{ needs.build-android.outputs.download_url }}\n**Bare:** ${{ needs.build-love.outputs.download_url}}"}
+            {"name":"Download Links","value":"**Windows:** ${{ needs.build-windows.outputs.downloadUrl }}\n**Linux:** ${{ needs.build-linux.outputs.downloadUrl }}\n**Android:** ${{ needs.build-android.outputs.downloadUrl }}\n**Bare:** ${{ needs.build-love.outputs.downloadUrl}}"}
             ]
             }'
 
