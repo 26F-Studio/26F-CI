@@ -334,9 +334,10 @@ jobs:
             "url":"https://github.com/${{ github.event.inputs.repository }}"
             },
             "title":"${{ github.event.inputs.appName }} (${{ github.event.inputs.versionName }}) Build Result",
+            "description": "CI requested from ${{ github.event.inputs.repository }}/${{ github.event.inputs.ref }}"
             "url":"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
             "thumbnail":{
-            "url":"https://raw.githubusercontent.com/${{ github.event.inputs.repository }}/${{ github.event.inputs.ref }}/.github/build/Linux/icon.png"
+            "url":"https://raw.githubusercontent.com/${{ github.event.inputs.repository }}/${{ github.event.inputs.ref }}/.github/build/linux/${{ github.event.inputs.buildType }}/icon.png"
             },
             "color":36863,
             "fields":[
