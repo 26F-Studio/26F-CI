@@ -57,9 +57,27 @@ jobs:
           echo versionString: ${{ github.event.inputs.versionString }}
           echo versionCode: ${{ github.event.inputs.versionCode }}
 
-  auto-test:
+  cache-love:
     runs-on: ubuntu-latest
     needs: check-inputs
+    steps:
+      - name: Build love package
+        uses: ./.github/actions/build-bare
+        with:
+          sourceDir: ${{ env.SOURCE_DIR }}
+          buildList: ${{ github.event.inputs.buildList }}
+      - name: Save love package cache
+        uses: actions/cache@v3
+        with:
+          path: ./target.love
+          key: ${{ github.event.inputs.packageName }}_Cache
+      - name: Check cache status
+        run: |
+          echo "${{ steps.cache-love.outputs.cache-hit }}"
+
+  auto-test:
+    runs-on: ubuntu-latest
+    needs: cache-love
     steps:
       - name: Initialize CI
         uses: actions/checkout@v3
@@ -77,7 +95,7 @@ jobs:
 
   build-windows:
     runs-on: windows-latest
-    needs: check-inputs
+    needs: cache-love
     env:
       PACKAGE_NAME: ./${{ github.event.inputs.package_name }}_Windows.zip
     outputs:
@@ -92,21 +110,21 @@ jobs:
           ref: ${{ github.event.inputs.ref }}
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
-      - name: Cache love package
-        id: cache-love-package
+      - name: Use love package cache
+        id: cache-love
         uses: actions/cache@v3
         with:
           path: ./target.love
           key: ${{ github.event.inputs.packageName }}_Cache
       - name: Check cache status
         run: |
-          echo "${{ steps.cache-love-package.outputs.cache-hit }}"
-      - if: ${{ steps.cache-love-package.outputs.cache-hit }} != 'true'
-        name: Build love package
-        uses: ./.github/actions/build-bare
-        with:
-          sourceDir: ${{ env.SOURCE_DIR }}
-          buildList: ${{ github.event.inputs.buildList }}
+          echo "${{ steps.cache-love.outputs.cache-hit }}"
+      # - if: ${{ steps.cache-love-package.outputs.cache-hit }} != 'true'
+      #   name: Build love package
+      #   uses: ./.github/actions/build-bare
+      #   with:
+      #     sourceDir: ${{ env.SOURCE_DIR }}
+      #     buildList: ${{ github.event.inputs.buildList }}
       - name: Build Windows package
         uses: ./.github/actions/build-windows
         with:
@@ -127,7 +145,7 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
-    needs: check-inputs
+    needs: cache-love
     env:
       PACKAGE_NAME: ./${{ github.event.inputs.package_name }}_Linux.AppImage
     outputs:
@@ -142,18 +160,12 @@ jobs:
           ref: ${{ github.event.inputs.ref }}
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
-      - name: Cache love package
-        id: cache-love-package
+      - name: Use love package cache
+        id: cache-love
         uses: actions/cache@v3
         with:
           path: ./target.love
           key: ${{ github.event.inputs.packageName }}_Cache
-      - if: ${{ steps.cache-love-package.outputs.cache-hit }} != 'true'
-        name: Build love package
-        uses: ./.github/actions/build-bare
-        with:
-          sourceDir: ${{ env.SOURCE_DIR }}
-          buildList: ${{ github.event.inputs.buildList }}
       - name: Build Linux package
         uses: ./.github/actions/build-linux
         with:
@@ -168,34 +180,48 @@ jobs:
           ./transfer wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
           echo "::set-output name=download_url::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
 
-  # build-android:
-  #   runs-on: ubuntu-latest
-  #   needs: get-info
-  #   env:
-  #     PACKAGE_NAME: ./Techmino_Galaxy_${{ needs.get-info.outputs.name }}_${{ needs.get-info.outputs.commit }}_#${{ GITHUB.RUN_NUMBER }}_Android.apk
-  #   outputs:
-  #     download_url: ${{ steps.transfer.outputs.download_url }}
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         submodules: "recursive"
-  #     - uses: ./.github/actions/build-android
-  #       with:
-  #         type: snapshot
-  #         apkCode: ${{ needs.get-info.outputs.apkCode }}
-  #         name: ${{ needs.get-info.outputs.name }}
-  #         output: ${{ env.PACKAGE_NAME }}
-
-  #         ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
-  #         ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-  #         ANDROID_KEYSTORE_KEYPASSWORD: ${{ secrets.ANDROID_KEYSTORE_KEYPASSWORD }}
-  #         ANDROID_KEYSTORE_STOREPASSWORD: ${{ secrets.ANDROID_KEYSTORE_STOREPASSWORD }}
-  #     - name: Upload to WeTransfer
-  #       id: transfer
-  #       run: |
-  #         curl -fsSL git.io/file-transfer | sh
-  #         ./transfer wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
-  #         echo "::set-output name=download_url::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
+  build-android:
+    runs-on: ubuntu-latest
+    needs: cache-love
+    env:
+      PACKAGE_NAME: ./${{ github.event.inputs.package_name }}_Android.apk
+    outputs:
+      download_url: ${{ steps.transfer.outputs.download_url }}
+    steps:
+      - name: Initialize CI
+        uses: actions/checkout@v3
+      - name: Clone target repository
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.event.inputs.repository }}
+          ref: ${{ github.event.inputs.ref }}
+          submodules: "recursive"
+          path: ${{ env.SOURCE_DIR }}
+      - name: Use love package cache
+        id: cache-love
+        uses: actions/cache@v3
+        with:
+          path: ./target.love
+          key: ${{ github.event.inputs.packageName }}_Cache
+      - name: Build Android package
+        uses: ./.github/actions/build-android
+        with:
+          sourceDir: ${{ env.SOURCE_DIR }}
+          appName: ${{ github.event.inputs.appName }}
+          buildType: ${{ github.event.inputs.buildType }}
+          versionString: ${{ github.event.inputs.versionString }}
+          versionCode: ${{ github.event.inputs.versionCode }}
+          output: ${{ env.PACKAGE_NAME }}
+          ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_KEYPASSWORD: ${{ secrets.ANDROID_KEYSTORE_KEYPASSWORD }}
+          ANDROID_KEYSTORE_STOREPASSWORD: ${{ secrets.ANDROID_KEYSTORE_STOREPASSWORD }}
+      - name: Upload to WeTransfer
+        id: transfer
+        run: |
+          curl -fsSL git.io/file-transfer | sh
+          ./transfer wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
+          echo "::set-output name=download_url::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
 
   # build-macOS:
   #   runs-on: macos-latest

@@ -5,14 +5,14 @@ inputs:
     required: true
     description: "Root folder of the sources"
   appName:
-    description: "App name"
     required: true
+    description: "App name"
   buildType:
     required: true
     description: "Build type"
   versionString:
     required: true
-    description: "version of the product"
+    description: "Version string of the product"
   output:
     required: true
     description: "Output path and name of the product"

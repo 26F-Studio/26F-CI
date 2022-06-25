@@ -5,8 +5,8 @@ inputs:
     required: true
     description: "Root folder of the sources"
   appName:
-    description: "App name"
     required: true
+    description: "App name"
   buildType:
     required: true
     description: "Build type"

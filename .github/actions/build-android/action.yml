@@ -1,15 +1,21 @@
 name: "Build Android"
 description: "Build Android package"
 inputs:
-  type:
+  sourceDir:
     required: true
-    description: "snapshot or release"
-  apkCode:
+    description: "Root folder of the sources"
+  appName:
     required: true
-    description: "apk code"
-  name:
+    description: "App name"
+  buildType:
     required: true
-    description: "name of the product"
+    description: "Build type"
+  versionString:
+    required: true
+    description: "Version string of the product"
+  versionCode:
+    required: true
+    description: "Version code of the product"
   output:
     required: true
     description: 'Output path and name of the product'
@@ -38,36 +44,31 @@ runs:
       shell: bash
       run: |
         git clone --recurse-submodules https://github.com/love2d/love-android -b 11.4 --depth 1 --shallow-submodules
+    - name: Extract love package
+      shell: bash
+      run: |
+        7z x ./target.love -o./love-android/app/src/embed/assets/
     - name: Copy resources
       shell: bash
       run: |
-        cp -r -f ./.github/build/Android/res/* ./love-android/app/src/main/res/
-        cp -r -f ./assets/ ./Zenitha/ ./conf.lua ./main.lua ./version.lua ./love-android/app/src/embed/assets/
+        cp -r -f ${{ inputs.sourceDir }}/.github/build/android/${{ inputs.buildType }}/res/* ./love-android/app/src/main/res/
     - name: Update android information
       shell: python
       run: |
-        if '${{ inputs.type }}' == 'release':
-          appName = 'Techmino Galaxy'
-          packageName = 'org.f26_studio.techmino_galaxy'
-          edition = 'release'
-        elif '${{ inputs.type }}' == 'snapshot':
-          appName = 'Techmino Galaxy Snapshot'
-          packageName = 'org.f26_studio.techmino_galaxy.snapshot'
-          edition = 'snapshot'
         with open('./love-android/app/src/main/AndroidManifest.xml', "r+", encoding='utf-8') as file:
           data = file.read()
           data = data\
-            .replace('LÖVE for Android', appName)\
-            .replace('@drawable/love', f'@mipmap/{edition}')
+            .replace('LÖVE for Android', '${{ inputs.appName }}')\
+            .replace('@drawable/love', '@mipmap/icon')
           file.seek(0)
           file.truncate()
           file.write(data)
         with open("./love-android/app/build.gradle", "r+", encoding='utf-8') as file:
           data = file.read()
           data = data\
-            .replace('org.love2d.android', packageName)\
-            .replace('30', '${{ inputs.apkCode }}')\
-            .replace('11.4', '${{ inputs.name }}')
+            .replace('org.love2d.android', 'org.f26_studio.${{ inputs.appName }}')\
+            .replace('30', '${{ inputs.versionCode }}')\
+            .replace('11.4', '${{ inputs.versionString }}')
           insert_pos = data.find('\n', data.find('proguardFiles')) + 1
           data = data[:insert_pos] + '            signingConfig signingConfigs.release\n' + data[insert_pos:]
           insert_pos = data.find('buildTypes') - 4
