@@ -125,27 +125,48 @@ jobs:
           ./transfer.exe wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
           echo "::set-output name=download_url::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
 
-  # build-linux:
-  #   runs-on: ubuntu-latest
-  #   needs: get-info
-  #   env:
-  #     PACKAGE_NAME: ./Techmino_Galaxy_${{ needs.get-info.outputs.name }}_${{ needs.get-info.outputs.commit }}_#${{ GITHUB.RUN_NUMBER }}_Linux.AppImage
-  #   outputs:
-  #     download_url: ${{ steps.transfer.outputs.download_url }}
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         submodules: "recursive"
-  #     - uses: ./.github/actions/build-linux
-  #       with:
-  #         output: ${{ env.PACKAGE_NAME }}
-  #         icon: ./.github/build/Linux/snapshot.png
-  #     - name: Upload to WeTransfer
-  #       id: transfer
-  #       run: |
-  #         curl -fsSL git.io/file-transfer | sh
-  #         ./transfer wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
-  #         echo "::set-output name=download_url::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
+  build-linux:
+    runs-on: ubuntu-latest
+    needs: get-info
+    env:
+      PACKAGE_NAME: ./${{ github.event.inputs.package_name }}_Linux.AppImage
+    outputs:
+      download_url: ${{ steps.transfer.outputs.download_url }}
+    steps:
+      - name: Initialize CI
+        uses: actions/checkout@v3
+      - name: Clone target repository
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.event.inputs.repository }}
+          ref: ${{ github.event.inputs.ref }}
+          submodules: "recursive"
+          path: ${{ env.SOURCE_DIR }}
+      - name: Cache love package
+        id: cache-love-package
+        uses: actions/cache@v3
+        with:
+          path: ./target.love
+          key: ${{ github.event.inputs.packageName }}_Cache
+      - if: ${{ steps.cache-love-package.outputs.cache-hit }} != 'true'
+        name: Build love package
+        uses: ./.github/actions/build-bare
+        with:
+          sourceDir: ${{ env.SOURCE_DIR }}
+          buildList: ${{ github.event.inputs.buildList }}
+      - name: Build Linux package
+        uses: ./.github/actions/build-linux
+        with:
+          sourceDir: ${{ env.SOURCE_DIR }}
+          appName: ${{ github.event.inputs.appName }}
+          buildType: ${{ github.event.inputs.buildType }}
+          output: ${{ env.PACKAGE_NAME }}
+      - name: Upload to WeTransfer
+        id: transfer
+        run: |
+          curl -fsSL git.io/file-transfer | sh
+          ./transfer wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
+          echo "::set-output name=download_url::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
 
   # build-android:
   #   runs-on: ubuntu-latest
