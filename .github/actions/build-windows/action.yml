@@ -45,6 +45,7 @@ runs:
     - name: Pack product folder
       shell: pwsh
       run: |
+        cp ${{ inputs.sourceDir }}/.github/build/windows/${{ inputs.buildType }}/icon.ico .\icon.ico
         cmd /c copy /b .\love\love.exe + .\target.love .\love\${{ inputs.appName }}.exe
         del .\love\love.exe
         del .\love\lovec.exe
@@ -54,6 +55,6 @@ runs:
         del .\love\readme.txt
         .\ResourceHacker.exe -open .\love\${{ inputs.appName }}.exe -save .\love\${{ inputs.appName }}.exe -action delete -mask "ICONGROUP,,"
         .\ResourceHacker.exe -open .\target.rc -save .\${{ inputs.appName }}.res -action compile
-        .\ResourceHacker.exe -open .\love\${{ inputs.appName }}.exe -save .\love\${{ inputs.appName }}.exe -action addoverwrite -res "${{ inputs.sourceDir }}.github/build/windows/${{ inputs.buildType }}/icon.ico" -mask "ICONGROUP,1,"
+        .\ResourceHacker.exe -open .\love\${{ inputs.appName }}.exe -save .\love\${{ inputs.appName }}.exe -action addoverwrite -res ".\icon.ico" -mask "ICONGROUP,1,"
         .\ResourceHacker.exe -open .\love\${{ inputs.appName }}.exe -save .\love\${{ inputs.appName }}.exe -action addoverwrite -res ".\${{ inputs.appName }}.res" -mask "VERSIONINFO,1,"
         7z a -tzip ${{ inputs.output }} ./love/*
