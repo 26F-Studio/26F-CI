@@ -102,7 +102,7 @@ runs:
         path: |
           ./love-android/love/build
           ./love-android/app/build
-        key: build-${{ inputs.appName }}-${{ inputs.buildType }}-${{ inputs.versionString }}-${{ inputs.output }}
+        key: build-${{ inputs.appName }}-${{ inputs.buildType }}-${{ inputs.versionString }}
     - name: Build Techmino Galaxy
       shell: bash
       run: |
