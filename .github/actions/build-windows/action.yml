@@ -1,6 +1,9 @@
 name: "Build Windows"
 description: "Build Windows package"
 inputs:
+  architecture: 
+    required: true
+    description: "32 or 64 bit"
   sourceDir:
     required: true
     description: "Root folder of the sources"
@@ -22,10 +25,10 @@ runs:
     - name: Download love
       uses: ./.github/actions/get-unzip
       with:
-        url: https://github.com/love2d/love/releases/download/11.4/love-11.4-win64.zip
+        url: https://github.com/love2d/love/releases/download/11.4/love-11.4-win${{ inputs.architecture }}.zip
     - name: Move love
       shell: bash
-      run: mv ./love-11.4-win64 ./love
+      run: mv ./love-11.4-win${{ inputs.architecture }} ./love
     - name: Download ResourceHacker
       uses: ./.github/actions/get-unzip
       with:
