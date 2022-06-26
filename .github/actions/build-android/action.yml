@@ -83,6 +83,26 @@ runs:
           file.seek(0)
           file.truncate()
           file.write(data)
+    - name: Cache gradle
+      uses: actions/cache@v3
+      with:
+        path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+        key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: gradle-
+    - name: Cache NDK
+      uses: actions/cache@v3
+      with:
+        path: /usr/local/lib/android/sdk/ndk/21.3.6528147
+        key: ndk-21.3.6528147
+    - name: Cache Builds
+      uses: actions/cache@v3
+      with:
+        path: |
+          ./love-android/love/build
+          ./love-android/app/build
+        key: build-${{ inputs.appName }}-${{ inputs.buildType }}-${{ inputs.versionString }}-${{ inputs.output }}
     - name: Build Techmino Galaxy
       shell: bash
       run: |
