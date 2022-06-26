@@ -37,6 +37,10 @@ on:
         description: "Version code (looks like 123)"
         required: false
         default: "1"
+      uploadArtifact:
+        description: "Upload product to artifacts or not"
+        required: false
+        default: "true"
 
 env:
   SOURCE_DIR: ./src/
@@ -57,6 +61,7 @@ jobs:
           versionName: ${{ github.event.inputs.versionName }}
           versionString: ${{ github.event.inputs.versionString }}
           versionCode: ${{ github.event.inputs.versionCode }}
+          uploadArtifact: ${{ github.event.inputs.uploadArtifact }}
           EOF
           )
           DISPLAY_STRING="${DISPLAY_STRING//'%'/'%25'}"
@@ -120,6 +125,12 @@ jobs:
           buildType: ${{ github.event.inputs.buildType }}
           versionString: ${{ github.event.inputs.versionString }}
           output: ${{ env.PACKAGE_NAME }}
+      - name: Upload artifact
+        if: ${{ github.event.inputs.uploadArtifact }} == 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.event.inputs.packageName }}_Windows_x86
+          path: ${{ env.PACKAGE_NAME }}
       - name: Get transfer
         uses: ./.github/actions/get-unzip
         with:
@@ -168,6 +179,12 @@ jobs:
           buildType: ${{ github.event.inputs.buildType }}
           versionString: ${{ github.event.inputs.versionString }}
           output: ${{ env.PACKAGE_NAME }}
+      - name: Upload artifact
+        if: ${{ github.event.inputs.uploadArtifact }} == 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.event.inputs.packageName }}_Windows_amd64
+          path: ${{ env.PACKAGE_NAME }}
       - name: Get transfer
         uses: ./.github/actions/get-unzip
         with:
@@ -215,6 +232,12 @@ jobs:
           appName: ${{ github.event.inputs.appName }}
           buildType: ${{ github.event.inputs.buildType }}
           output: ${{ env.PACKAGE_NAME }}
+      - name: Upload artifact
+        if: ${{ github.event.inputs.uploadArtifact }} == 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.event.inputs.packageName }}_Linux
+          path: ${{ env.PACKAGE_NAME }}
       - name: Upload to WeTransfer
         id: transfer
         run: |
@@ -264,6 +287,12 @@ jobs:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_KEYPASSWORD: ${{ secrets.ANDROID_KEYSTORE_KEYPASSWORD }}
           ANDROID_KEYSTORE_STOREPASSWORD: ${{ secrets.ANDROID_KEYSTORE_STOREPASSWORD }}
+      - name: Upload artifact
+        if: ${{ github.event.inputs.uploadArtifact }} == 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.event.inputs.packageName }}_Android
+          path: ${{ env.PACKAGE_NAME }}
       - name: Upload to WeTransfer
         id: transfer
         run: |
@@ -368,6 +397,12 @@ jobs:
       - name: Rename love package
         run: |
           mv ./target.love ${{ env.PACKAGE_NAME }}
+      - name: Upload artifact
+        if: ${{ github.event.inputs.uploadArtifact }} == 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.event.inputs.packageName }}_Bare
+          path: ${{ env.PACKAGE_NAME }}
       - name: Upload to WeTransfer
         id: transfer
         run: |
