@@ -47,7 +47,8 @@ jobs:
     steps:
       - name: Display inputs
         run: |
-          echo '::notice::repository: ${{ github.event.inputs.repository }}
+          DISPLAY_STRING=$(cat << EOF
+          repository: ${{ github.event.inputs.repository }}
           ref: ${{ github.event.inputs.ref }}
           appName: ${{ github.event.inputs.appName }}
           buildType: ${{ github.event.inputs.buildType }}
@@ -55,7 +56,13 @@ jobs:
           packageName: ${{ github.event.inputs.packageName }}
           versionName: ${{ github.event.inputs.versionName }}
           versionString: ${{ github.event.inputs.versionString }}
-          versionCode: ${{ github.event.inputs.versionCode }}'
+          versionCode: ${{ github.event.inputs.versionCode }}
+          EOF
+          )
+          DISPLAY_STRING="${DISPLAY_STRING//'%'/'%25'}"
+          DISPLAY_STRING="${DISPLAY_STRING//$'\n'/'%0A'}"
+          DISPLAY_STRING="${DISPLAY_STRING//$'\r'/'%0D'}"
+          echo "::notice::$DISPLAY_STRING"
 
   auto-test:
     runs-on: ubuntu-latest
@@ -341,7 +348,8 @@ jobs:
             },
             "color":36863,
             "fields":[
-            {"name":"Version","value":"${{ github.event.inputs.versionString }}"},
+            {"name":"Version","value":"${{ github.event.inputs.versionString }}","inline": true},
+            {"name":"Package Name","value":"${{ github.event.inputs.packageName }}","inline": true},
             {"name":"Status","value":"**Automatic Test:** ${{ needs.auto-test.result }}\n**Windows:** ${{ needs.build-windows.result }}\n**Linux:** ${{ needs.build-linux.result }}\n**Android:** ${{ needs.build-android.result }}\n**Bare:** ${{ needs.build-love.result }}"},
             {"name":"Download Links","value":"**Windows:** ${{ needs.build-windows.outputs.downloadUrl }}\n**Linux:** ${{ needs.build-linux.outputs.downloadUrl }}\n**Android:** ${{ needs.build-android.outputs.downloadUrl }}\n**Bare:** ${{ needs.build-love.outputs.downloadUrl}}"}
             ]
