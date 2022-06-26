@@ -54,7 +54,7 @@ runs:
         del .\love\changes.txt
         del .\love\readme.txt
         cmd /c '".\ResourceHacker.exe" -open ".\love\${{ inputs.appName }}.exe" -save ".\love\${{ inputs.appName }}.exe" -action delete -mask ICONGROUP,,'
-        cmd /c '".\ResourceHacker.exe" -open ".\target.rc" -save ".\${{ inputs.appName }}.res" -action compile
+        cmd /c '".\ResourceHacker.exe" -open ".\target.rc" -save ".\${{ inputs.appName }}.res" -action compile'
         cmd /c '".\ResourceHacker.exe" -open ".\love\${{ inputs.appName }}.exe" -save ".\love\${{ inputs.appName }}.exe" -action addoverwrite -res ".\icon.ico" -mask ICONGROUP,1,'
         cmd /c '".\ResourceHacker.exe" -open ".\love\${{ inputs.appName }}.exe" -save ".\love\${{ inputs.appName }}.exe" -action addoverwrite -res ".\${{ inputs.appName }}.res" -mask VERSIONINFO,1,'
         7z a -tzip ${{ inputs.output }} ./love/*
