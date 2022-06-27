@@ -1,4 +1,4 @@
-name: "26F Studio Development CI"
+name: "26F Studio Remote CI"
 
 on:
   workflow_dispatch:
