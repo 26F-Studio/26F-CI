@@ -149,7 +149,7 @@ jobs:
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
       - name: Download love package
-        uses: actions/download_artifact@v3
+        uses: actions/download-artifact@v3
         with:
           name: target_love_package
       - name: Build 32 bit Windows package
@@ -195,7 +195,7 @@ jobs:
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
       - name: Download love package
-        uses: actions/download_artifact@v3
+        uses: actions/download-artifact@v3
         with:
           name: target_love_package
       - name: Build 64 bit Windows package
@@ -241,7 +241,7 @@ jobs:
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
       - name: Download love package
-        uses: actions/download_artifact@v3
+        uses: actions/download-artifact@v3
         with:
           name: target_love_package
       - name: Build Linux package
@@ -282,7 +282,7 @@ jobs:
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
       - name: Download love package
-        uses: actions/download_artifact@v3
+        uses: actions/download-artifact@v3
         with:
           name: target_love_package
       - name: Build Android package
@@ -329,7 +329,7 @@ jobs:
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
       - name: Download love package
-        uses: actions/download_artifact@v3
+        uses: actions/download-artifact@v3
         with:
           name: target_love_package
       - name: Build MacOS package
