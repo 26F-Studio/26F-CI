@@ -100,9 +100,10 @@ runs:
       uses: actions/cache@v3
       with:
         path: |
+          ./love-android/.gradle
           ./love-android/love/build
           ./love-android/app/build
-        key: build-${{ inputs.appName }}-${{ inputs.buildType }}-${{ inputs.versionString }}
+        key: build-love-11.4
     - name: Build Techmino Galaxy
       shell: bash
       run: |

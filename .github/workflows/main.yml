@@ -69,6 +69,50 @@ jobs:
           DISPLAY_STRING="${DISPLAY_STRING//$'\r'/'%0D'}"
           echo "::notice::$DISPLAY_STRING"
 
+  build-love:
+    runs-on: ubuntu-latest
+    needs: check-inputs
+    env:
+      PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_Bare.love
+    outputs:
+      downloadUrl: ${{ steps.transfer.outputs.downloadUrl }}
+    steps:
+      - name: Initialize CI
+        uses: actions/checkout@v3
+      - name: Clone target repository
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.event.inputs.repository }}
+          ref: ${{ github.event.inputs.ref }}
+          submodules: "recursive"
+          path: ${{ env.SOURCE_DIR }}
+      - name: Build love package
+        if: ${{ steps.cache-love.outputs.cace-hit }} != 'true'
+        uses: ./.github/actions/build-bare
+        with:
+          sourceDir: ${{ env.SOURCE_DIR }}
+          buildList: ${{ github.event.inputs.buildList }}
+      - name: Upload love package
+        uses: actions/upload-artifact@v3
+        with:
+          name: target_love_package
+          path: ./target.love
+      - name: Rename love package
+        run: |
+          mv ./target.love ${{ env.PACKAGE_NAME }}
+      - name: Upload artifact
+        if: ${{ github.event.inputs.uploadArtifact }} == 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.event.inputs.packageName }}_Bare
+          path: ${{ env.PACKAGE_NAME }}
+      - name: Upload to WeTransfer
+        id: transfer
+        run: |
+          curl -fsSL git.io/file-transfer | sh
+          ./transfer wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
+          echo "::set-output name=downloadUrl::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
+
   auto-test:
     runs-on: ubuntu-latest
     needs: check-inputs
@@ -89,7 +133,7 @@ jobs:
 
   build-windows-x86:
     runs-on: windows-latest
-    needs: check-inputs
+    needs: build-love
     env:
       PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_Windows_x86.zip
     outputs:
@@ -104,18 +148,10 @@ jobs:
           ref: ${{ github.event.inputs.ref }}
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
-      - name: Cache love package
-        id: cache-love
-        uses: actions/cache@v2
+      - name: Download love package
+        uses: actions/download_artifact@v3
         with:
-          path: ./target.love
-          key: love-cache-${{ GITHUB.RUN_NUMBER }}
-      - name: Build love package
-        if: steps.cache-love.outputs.cace-hit != 'true'
-        uses: ./.github/actions/build-bare
-        with:
-          sourceDir: ${{ env.SOURCE_DIR }}
-          buildList: ${{ github.event.inputs.buildList }}
+          name: target_love_package
       - name: Build 32 bit Windows package
         uses: ./.github/actions/build-windows
         with:
@@ -140,10 +176,10 @@ jobs:
         run: |
           ./transfer.exe wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
           echo "::set-output name=downloadUrl::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
-  
+
   build-windows-amd64:
     runs-on: windows-latest
-    needs: check-inputs
+    needs: build-love
     env:
       PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_Windows_amd64.zip
     outputs:
@@ -158,18 +194,10 @@ jobs:
           ref: ${{ github.event.inputs.ref }}
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
-      - name: Cache love package
-        id: cache-love
-        uses: actions/cache@v2
+      - name: Download love package
+        uses: actions/download_artifact@v3
         with:
-          path: ./target.love
-          key: love-cache-${{ GITHUB.RUN_NUMBER }}
-      - name: Build love package
-        if: steps.cache-love.outputs.cace-hit != 'true'
-        uses: ./.github/actions/build-bare
-        with:
-          sourceDir: ${{ env.SOURCE_DIR }}
-          buildList: ${{ github.event.inputs.buildList }}
+          name: target_love_package
       - name: Build 64 bit Windows package
         uses: ./.github/actions/build-windows
         with:
@@ -195,10 +223,9 @@ jobs:
           ./transfer.exe wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
           echo "::set-output name=downloadUrl::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
 
-
   build-linux:
     runs-on: ubuntu-latest
-    needs: check-inputs
+    needs: build-love
     env:
       PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_Linux.AppImage
     outputs:
@@ -213,18 +240,10 @@ jobs:
           ref: ${{ github.event.inputs.ref }}
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
-      - name: Cache love package
-        id: cache-love
-        uses: actions/cache@v2
+      - name: Download love package
+        uses: actions/download_artifact@v3
         with:
-          path: ./target.love
-          key: love-cache-${{ GITHUB.RUN_NUMBER }}
-      - name: Build love package
-        if: steps.cache-love.outputs.cace-hit != 'true'
-        uses: ./.github/actions/build-bare
-        with:
-          sourceDir: ${{ env.SOURCE_DIR }}
-          buildList: ${{ github.event.inputs.buildList }}
+          name: target_love_package
       - name: Build Linux package
         uses: ./.github/actions/build-linux
         with:
@@ -247,7 +266,7 @@ jobs:
 
   build-android:
     runs-on: ubuntu-latest
-    needs: check-inputs
+    needs: build-love
     env:
       PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_Android.apk
     outputs:
@@ -262,18 +281,10 @@ jobs:
           ref: ${{ github.event.inputs.ref }}
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
-      - name: Cache love package
-        id: cache-love
-        uses: actions/cache@v2
+      - name: Download love package
+        uses: actions/download_artifact@v3
         with:
-          path: ./target.love
-          key: love-cache-${{ GITHUB.RUN_NUMBER }}
-      - name: Build love package
-        if: ${{ steps.cache-love.outputs.cace-hit }} != 'true'
-        uses: ./.github/actions/build-bare
-        with:
-          sourceDir: ${{ env.SOURCE_DIR }}
-          buildList: ${{ github.event.inputs.buildList }}
+          name: target_love_package
       - name: Build Android package
         uses: ./.github/actions/build-android
         with:
@@ -300,17 +311,49 @@ jobs:
           ./transfer wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
           echo "::set-output name=downloadUrl::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
 
-  # build-macOS:
-  #   runs-on: macos-latest
-  #   needs: get-info
-  #   steps:
-  #   - uses: actions/checkout@v2
-  #     with:
-  #       submodules: 'recursive'
-  #   - uses: ./.github/actions/update-version
-  #     with:
-  #       commit: ${{ needs.get-info.outputs.commit }}
-  #       type: snapshot
+  build-macos:
+    runs-on: macos-latest
+    needs: build-love
+    env:
+      PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_MacOS.apk
+    outputs:
+      downloadUrl: ${{ steps.transfer.outputs.downloadUrl }}
+    steps:
+      - name: Initialize CI
+        uses: actions/checkout@v3
+      - name: Clone target repository
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.event.inputs.repository }}
+          ref: ${{ github.event.inputs.ref }}
+          submodules: "recursive"
+          path: ${{ env.SOURCE_DIR }}
+      - name: Download love package
+        uses: actions/download_artifact@v3
+        with:
+          name: target_love_package
+      - name: Build MacOS package
+        uses: ./.github/actions/build-macos
+        with:
+          sourceDir: ${{ env.SOURCE_DIR }}
+          appName: ${{ github.event.inputs.appName }}
+          buildType: ${{ github.event.inputs.buildType }}
+          versionString: ${{ github.event.inputs.versionString }}
+          versionCode: ${{ github.event.inputs.versionCode }}
+          output: ${{ env.PACKAGE_NAME }}
+      # - name: Upload artifact
+      #   if: github.event.inputs.uploadArtifact == 'true'
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: ${{ github.event.inputs.packageName }}_Android
+      #     path: ${{ env.PACKAGE_NAME }}
+      # - name: Upload to WeTransfer
+      #   id: transfer
+      #   run: |
+      #     curl -fsSL git.io/file-transfer | sh
+      #     ./transfer wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
+      #     echo "::set-output name=downloadUrl::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
+
   #   - uses: ./.github/actions/build-macos
   #     with:
   #       name: ${{ needs.get-info.outputs.name }}
@@ -365,57 +408,27 @@ jobs:
   #       name: Techmino_${{ needs.get-info.outputs.name }}_${{ needs.get-info.outputs.commit }}_#${{ GITHUB.RUN_NUMBER }}_iOS
   #       path: Techmino.ipa
 
-  build-love:
+  post-build:
     runs-on: ubuntu-latest
-    needs: check-inputs
-    env:
-      PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_Bare.love
-    outputs:
-      downloadUrl: ${{ steps.transfer.outputs.downloadUrl }}
+    if: ${{ always() }}
+    needs:
+      [
+        auto-test,
+        build-love,
+        build-windows-x86,
+        build-windows-amd64,
+        build-linux,
+        build-android,
+        build-macos,
+      ]
     steps:
       - name: Initialize CI
         uses: actions/checkout@v3
-      - name: Clone target repository
-        uses: actions/checkout@v3
+      - name: Cleanup
+        uses:  geekyeggo/delete-artifact@v1
         with:
-          repository: ${{ github.event.inputs.repository }}
-          ref: ${{ github.event.inputs.ref }}
-          submodules: "recursive"
-          path: ${{ env.SOURCE_DIR }}
-      - name: Cache love package
-        id: cache-love
-        uses: actions/cache@v2
-        with:
-          path: ./target.love
-          key: love-cache-${{ GITHUB.RUN_NUMBER }}
-      - name: Build love package
-        if: ${{ steps.cache-love.outputs.cace-hit }} != 'true'
-        uses: ./.github/actions/build-bare
-        with:
-          sourceDir: ${{ env.SOURCE_DIR }}
-          buildList: ${{ github.event.inputs.buildList }}
-      - name: Rename love package
-        run: |
-          mv ./target.love ${{ env.PACKAGE_NAME }}
-      - name: Upload artifact
-        if: ${{ github.event.inputs.uploadArtifact }} == 'true'
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ github.event.inputs.packageName }}_Bare
-          path: ${{ env.PACKAGE_NAME }}
-      - name: Upload to WeTransfer
-        id: transfer
-        run: |
-          curl -fsSL git.io/file-transfer | sh
-          ./transfer wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
-          echo "::set-output name=downloadUrl::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
-
-  discord-report:
-    runs-on: ubuntu-latest
-    if: ${{ always() }}
-    needs: [auto-test, build-windows-x86, build-windows-amd64, build-linux, build-android, build-love]
-    steps:
-      - name: Discord Message
+          name: target_love_package
+      - name: Send Discord message
         uses: Sniddl/discord-commits@v1.3
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
