@@ -22,13 +22,19 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Download love
+    - name: Clone love
+      shell: bash
+      run: |
+        git clone --recurse-submodules https://github.com/love2d/love -b 11.4 --depth 1 --shallow-submodules
+    - name: Download framework SDK
       uses: ./.github/actions/get-unzip
       with:
-        url: https://github.com/love2d/love/releases/download/11.4/love-11.4-macos.zip
-    - name: Rename love folder
+        url: https://github.com/love2d/love/releases/download/11.4/love-11.4-apple-libraries.zip
+    - name: Check SDK folder
       shell: bash
-      run: mv ./love-11.4-macos ./love
+      run: |
+        cd ./love-11.4-apple-libraries
+        ls -l
     
     # - name: Fastlane match
     #   uses: maierj/fastlane-action@v2.0.1
