@@ -30,12 +30,14 @@ runs:
       uses: ./.github/actions/get-unzip
       with:
         url: https://github.com/love2d/love/releases/download/11.4/love-11.4-apple-libraries.zip
-    - name: Check SDK folder
+    - name: Move SDK folder
       shell: bash
       run: |
-        cd ./love-11.4-apple-libraries
-        ls -l
-    
+        mv ./love-apple-dependencies/macOS/Frameworks/ ./love/platform/xcode/macosx
+    - name: Modify project info
+      shell: bash
+      run: |
+        mv ./love-apple-dependencies/macOS/Frameworks/ ./love/platform/xcode/macosx
     # - name: Fastlane match
     #   uses: maierj/fastlane-action@v2.0.1
     #   with:
