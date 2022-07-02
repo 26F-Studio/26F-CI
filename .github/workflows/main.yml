@@ -315,7 +315,7 @@ jobs:
     runs-on: macos-latest
     needs: build-love
     env:
-      PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_MacOS.apk
+      PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_MacOS.zip
     outputs:
       downloadUrl: ${{ steps.transfer.outputs.downloadUrl }}
     steps:
@@ -341,18 +341,18 @@ jobs:
           versionString: ${{ github.event.inputs.versionString }}
           versionCode: ${{ github.event.inputs.versionCode }}
           output: ${{ env.PACKAGE_NAME }}
-      # - name: Upload artifact
-      #   if: github.event.inputs.uploadArtifact == 'true'
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: ${{ github.event.inputs.packageName }}_Android
-      #     path: ${{ env.PACKAGE_NAME }}
-      # - name: Upload to WeTransfer
-      #   id: transfer
-      #   run: |
-      #     curl -fsSL git.io/file-transfer | sh
-      #     ./transfer wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
-      #     echo "::set-output name=downloadUrl::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
+      - name: Upload artifact
+        if: github.event.inputs.uploadArtifact == 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.event.inputs.packageName }}_MacOS
+          path: ${{ env.PACKAGE_NAME }}
+      - name: Upload to WeTransfer
+        id: transfer
+        run: |
+          curl -fsSL git.io/file-transfer | sh
+          ./transfer wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
+          echo "::set-output name=downloadUrl::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
 
   #   - uses: ./.github/actions/build-macos
   #     with:

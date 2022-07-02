@@ -38,6 +38,54 @@ runs:
       shell: bash
       run: |
         npm i xcode plist -g
+    - name: Modify XCode project
+      shell: node
+      run: |
+        const fs = require('fs');
+        const plist = require('plist');
+        const xcode = require('xcode');
+
+        const pbxprojPath = './love/platform/xcode/love.xcodeproj/project.pbxproj';
+
+        const project = xcode.project(pbxprojPath).parseSync();
+        const targetKey = project.findTargetKey('love-macosx');
+        const resourcesGroupKey = project.findPBXGroupKey({name: 'Resources'});
+        const pbxFile = project.addFile('./target.love', resourcesGroupKey, {target: targetKey});
+        pbxFile.uuid = project.generateUuid();
+        project.addToPbxBuildFileSection(pbxFile);
+        project.addToPbxResourcesBuildPhase(pbxFile);
+
+        fs.writeFileSync(pbxprojPath, project.writeSync());
+
+        const plistPath = './love/platform/xcode/macosx/love-macosx.plist';
+
+        const parsed = plist['parse'](fs.readFileSync(plistPath, 'utf8'));
+        parsed['CFBundleName'] = '${{ inputs.appName }}';
+
+        fs.writeFileSync(plistPath, plist['build'](parsed));
+    - name: Build MacOS archive
+      shell: bash
+      run: |
+        xcodebuild clean archive \
+        -project ./love/platform/xcode/love.xcodeproj \
+        -scheme love-macosx \
+        -configuration Release \
+        -archivePath ./${{ inputs.appName }}.xcarchive \
+        PRODUCT_BUNDLE_IDENTIFIER='org.f26_studio.${{ inputs.appName }}'
+        MARKETING_VERSION='${{ inputs.versionString }}'
+    - name: Export archive
+      shell: bash
+      run: |
+        xcodebuild -exportArchive \
+        -archivePath ./${{ inputs.appName }}.xcarchive \
+        -exportPath ./${{ inputs.appName }} \
+        -exportOptionsPlist ./love/platform/xcode/macosx/macos-copy-app.plist
+    - name: Zip app
+      shell: bash
+      run: |
+        ls -l ./${{ inputs.appName }}/
+        ditto -c -k --sequesterRsrc --keepParent ./${{ inputs.appName }}/love.app ${{ inputs.output }}
+
     # - name: Fastlane match
     #   uses: maierj/fastlane-action@v2.0.1
     #   with:
