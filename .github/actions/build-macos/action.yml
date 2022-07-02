@@ -66,7 +66,7 @@ runs:
     - name: Build MacOS archive
       shell: bash
       run: |
-        xcodebuild clean archive \
+        xcodebuild clean archive -quiet \
         -project ./love/platform/xcode/love.xcodeproj \
         -scheme love-macosx \
         -configuration Release \
@@ -78,13 +78,13 @@ runs:
       run: |
         xcodebuild -exportArchive \
         -archivePath ./${{ inputs.appName }}.xcarchive \
-        -exportPath ./${{ inputs.appName }} \
+        -exportPath . \
         -exportOptionsPlist ./love/platform/xcode/macosx/macos-copy-app.plist
     - name: Zip app
       shell: bash
       run: |
-        ls -l ./${{ inputs.appName }}/
-        ditto -c -k --sequesterRsrc --keepParent ./${{ inputs.appName }}/love.app ${{ inputs.output }}
+        ls -l
+        ditto -c -k --sequesterRsrc --keepParent ./${{ inputs.appName }}.app ${{ inputs.output }}
 
     # - name: Fastlane match
     #   uses: maierj/fastlane-action@v2.0.1
