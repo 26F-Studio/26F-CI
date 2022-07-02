@@ -34,10 +34,10 @@ runs:
       shell: bash
       run: |
         mv ./love-apple-dependencies/macOS/Frameworks/ ./love/platform/xcode/macosx
-    - name: Modify project info
+    - name: NPM install
       shell: bash
       run: |
-        mv ./love-apple-dependencies/macOS/Frameworks/ ./love/platform/xcode/macosx
+        npm i xcode plist -g
     # - name: Fastlane match
     #   uses: maierj/fastlane-action@v2.0.1
     #   with:
