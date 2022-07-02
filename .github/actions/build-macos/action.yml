@@ -65,6 +65,10 @@ runs:
         EOT
         
         node temp.js
+    - name: move love package
+      shell: bash
+      run: |
+        mv ./target.love ./love/platform/xcode/
     - name: Build MacOS archive
       shell: bash
       run: |
