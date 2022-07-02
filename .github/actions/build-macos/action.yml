@@ -37,9 +37,10 @@ runs:
     - name: NPM install
       shell: bash
       run: |
-        npm i xcode plist -g
+        npm i plist xcode --location=global
+        npm list --location=global
     - name: Modify XCode project
-      shell: node
+      shell: node {0}
       run: |
         const fs = require('fs');
         const plist = require('plist');
