@@ -45,22 +45,16 @@ runs:
         const xcode = require('xcode');
 
         const pbxprojPath = './love/platform/xcode/love.xcodeproj/project.pbxproj';
-
         const project = xcode.project(pbxprojPath).parseSync();
-        const targetKey = project.findTargetKey('love-macosx');
+        project.updateProductName('${{ inputs.appName }}');
         const resourcesGroupKey = project.findPBXGroupKey({name: 'Resources'});
-        const pbxFile = project.addFile('./target.love', resourcesGroupKey, {target: targetKey});
-        pbxFile.uuid = project.generateUuid();
-        project.addToPbxBuildFileSection(pbxFile);
-        project.addToPbxResourcesBuildPhase(pbxFile);
-
+        const targetKey = project.findTargetKey('"love-macosx"')
+        project.addResourceFile('./target.love', {target: targetKey}, resourcesGroupKey);
         fs.writeFileSync(pbxprojPath, project.writeSync());
 
         const plistPath = './love/platform/xcode/macosx/love-macosx.plist';
-
         const parsed = plist['parse'](fs.readFileSync(plistPath, 'utf8'));
         parsed['CFBundleName'] = '${{ inputs.appName }}';
-
         fs.writeFileSync(plistPath, plist['build'](parsed));
         EOT
         
