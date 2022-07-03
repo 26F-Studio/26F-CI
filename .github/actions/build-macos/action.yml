@@ -74,6 +74,7 @@ runs:
             image.filename = 'icon_' + image.size + (image.scale === '2x' ? '@2x' : '') + '.png';
         });
         console.info(iconContents);
+        fs.writeFileSync(iconPath, JSON.stringify(iconContents));
         EOT
         
         node temp.js
