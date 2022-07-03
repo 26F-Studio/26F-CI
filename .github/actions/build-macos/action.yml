@@ -39,8 +39,8 @@ runs:
       shell: bash
       run: |
         rm -rf ./love/platform/xcode/Images.xcassets/OS\ X\ AppIcon.appiconset/*.png
-        iconutil -c iconset ${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/icon.icns
-        mv ./icon.iconset/* ./love/platform/xcode/Images.xcassets/OS\ X\ AppIcon.appiconset/
+        iconutil -c iconset -o ./icon.iconset ${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/icon.icns
+        mv -f ./icon.iconset/* ./love/platform/xcode/Images.xcassets/OS\ X\ AppIcon.appiconset/
     - name: Modify XCode project
       shell: bash
       run: |
