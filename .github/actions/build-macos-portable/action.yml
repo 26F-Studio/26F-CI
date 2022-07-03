@@ -19,6 +19,19 @@ inputs:
   output:
     required: true
     description: "Output path and name of the product"
+  APPLE_ACCOUNT_PASSWORD:
+    required: true
+    description: "App Store Connect account password"
+  APPLE_ACCOUNT_USERNAME:
+    required: true
+    description: "App Store Connect account username"
+  APPLE_CERT_DEVELOPER_ID_APPLICATION:
+    required: true
+    description: "Developer ID Application certificate"
+  APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD:
+    required: true
+    description: "Developer ID Application certificate password"
+
 runs:
   using: "composite"
   steps:
@@ -110,11 +123,11 @@ runs:
         KEYCHAIN_PASSWORD: 26F-Studio-CI
       shell: bash
       run: |
-        echo "${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION }}" | base64 --decode > $CERTIFICATE_FILENAME
+        echo "${{ inputs.APPLE_CERT_DEVELOPER_ID_APPLICATION }}" | base64 --decode > $CERTIFICATE_FILENAME
         security create-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
         security default-keychain -s $KEYCHAIN_FILENAME
         security unlock-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
-        security import $CERTIFICATE_FILENAME -k $KEYCHAIN_FILENAME -P "${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD }}" -T /usr/bin/codesign
+        security import $CERTIFICATE_FILENAME -k $KEYCHAIN_FILENAME -P "${{ inputs.APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD }}" -T /usr/bin/codesign
         security find-identity -v
         security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
     - name: Codesign application bundle
@@ -135,8 +148,8 @@ runs:
       uses: GuillaumeFalourd/xcode-notarize@v1
       with:
         product-path: ./${{ inputs.appName }}.app
-        appstore-connect-username: ${{ secrets.APPLE_ACCOUNT_USERNAME }}
-        appstore-connect-password: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
+        appstore-connect-username: ${{ inputs.APPLE_ACCOUNT_USERNAME }}
+        appstore-connect-password: ${{ inputs.APPLE_ACCOUNT_PASSWORD }}
         verbose: true
     - name: Create dmg file
       shell: bash
@@ -172,8 +185,8 @@ runs:
       uses: GuillaumeFalourd/xcode-notarize@v1
       with:
         product-path: ./${{ inputs.output }}
-        appstore-connect-username: ${{ secrets.APPLE_ACCOUNT_USERNAME }}
-        appstore-connect-password: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
+        appstore-connect-username: ${{ inputs.APPLE_ACCOUNT_USERNAME }}
+        appstore-connect-password: ${{ inputs.APPLE_ACCOUNT_PASSWORD }}
         verbose: true
     - name: Staple dmg file
       uses: devbotsxyz/xcode-staple@v1

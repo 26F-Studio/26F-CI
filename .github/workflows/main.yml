@@ -341,6 +341,10 @@ jobs:
           versionString: ${{ github.event.inputs.versionString }}
           versionCode: ${{ github.event.inputs.versionCode }}
           output: ${{ env.PACKAGE_NAME }}
+          APPLE_ACCOUNT_PASSWORD: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
+          APPLE_ACCOUNT_USERNAME: ${{ secrets.APPLE_ACCOUNT_USERNAME }}
+          APPLE_CERT_DEVELOPER_ID_APPLICATION: ${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION }}
+          APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD: ${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD }}
       - name: Upload artifact
         if: github.event.inputs.uploadArtifact == 'true'
         uses: actions/upload-artifact@v3
@@ -425,7 +429,7 @@ jobs:
       - name: Initialize CI
         uses: actions/checkout@v3
       - name: Cleanup
-        uses:  geekyeggo/delete-artifact@v1
+        uses: geekyeggo/delete-artifact@v1
         with:
           name: target_love_package
       - name: Send Discord message
