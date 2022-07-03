@@ -63,7 +63,7 @@ runs:
         const plistPath = './love/platform/xcode/macosx/love-macosx.plist';
         const parsed = plist['parse'](fs.readFileSync(plistPath, 'utf8'));
         parsed['CFBundleName'] = '${{ inputs.appName }}';
-        parsed['NSHumanReadableCopyright'] = `Copyright © 2019-${new Date().getFullYear()} 26F-Studio. Some Rights Reserved.`;
+        parsed['NSHumanReadableCopyright'] = 'Copyright © 2019-' + new Date().getFullYear() + ' 26F-Studio. Some Rights Reserved.';
         delete parsed['CFBundleDocumentTypes'];
         delete parsed['UTExportedTypeDeclarations'];
         console.info(parsed);
@@ -72,7 +72,7 @@ runs:
         const iconPath = './love/platform/xcode/Images.xcassets/OS X AppIcon.appiconset/Contents.json';
         const iconContents = JSON.parse(fs.readFileSync(iconPath, 'utf8'));
         iconContents.images.forEach(image => {
-            image.filename = `icon_${image.size}${image.scale === '2x' ? '@2x' : ''}.png`;
+            image.filename = 'icon_' + image.size + image.scale === '2x' ? '@2x' : '' + '.png';
         });
         console.info(iconContents);
         EOT
@@ -86,6 +86,7 @@ runs:
         -scheme love-macosx \
         -configuration Release \
         -archivePath ./${{ inputs.appName }}.xcarchive \
+        OTHER_CFLAGS="-Wno-unused-variable" \
         MARKETING_VERSION='${{ inputs.versionString }}' \
         PRODUCT_BUNDLE_IDENTIFIER=org.26f-studio.$(echo "${{ inputs.appName }}" | sed "s/_/-/g")
     - name: Export archive
@@ -98,6 +99,7 @@ runs:
     - name: Zip app
       shell: bash
       run: |
+        ls -l
         ditto -c -k --sequesterRsrc --keepParent ./${{ inputs.appName }}.app ${{ inputs.output }}
 
     # - name: Fastlane match
