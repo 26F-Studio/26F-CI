@@ -64,7 +64,6 @@ runs:
         const parsed = plist['parse'](fs.readFileSync(plistPath, 'utf8'));
         parsed['CFBundleName'] = '${{ inputs.appName }}';
         parsed['NSHumanReadableCopyright'] = 'Copyright © 2019-' + new Date().getFullYear() + ' 26F-Studio. Some Rights Reserved.';
-        delete parsed['CFBundleDocumentTypes'];
         delete parsed['UTExportedTypeDeclarations'];
         console.info(parsed);
         fs.writeFileSync(plistPath, plist['build'](parsed));
