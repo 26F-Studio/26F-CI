@@ -311,11 +311,11 @@ jobs:
           ./transfer wet -s -p 16 --no-progress ${{ env.PACKAGE_NAME }} 2>&1>./wetransfer.log
           echo "::set-output name=downloadUrl::$(cat ./wetransfer.log | grep https | cut -f3 -d" ")"
 
-  build-macos:
+  build-macos-portable:
     runs-on: macos-latest
     needs: build-love
     env:
-      PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_MacOS.zip
+      PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_macOS.dmg
     outputs:
       downloadUrl: ${{ steps.transfer.outputs.downloadUrl }}
     steps:
@@ -333,7 +333,7 @@ jobs:
         with:
           name: target_love_package
       - name: Build MacOS package
-        uses: ./.github/actions/build-macos
+        uses: ./.github/actions/build-macos-portable
         with:
           sourceDir: ${{ env.SOURCE_DIR }}
           appName: ${{ github.event.inputs.appName }}
@@ -419,7 +419,7 @@ jobs:
         build-windows-amd64,
         build-linux,
         build-android,
-        build-macos,
+        build-macos-portable,
       ]
     steps:
       - name: Initialize CI
@@ -448,8 +448,8 @@ jobs:
             "fields":[
             {"name":"Version","value":"${{ github.event.inputs.versionString }}","inline": true},
             {"name":"Package Name","value":"${{ github.event.inputs.packageName }}","inline": true},
-            {"name":"Status","value":"**Automatic Test:** ${{ needs.auto-test.result }}\n**Bare:** ${{ needs.build-love.result }}\n**Windows (32 Bit):** ${{ needs.build-windows-x86.result }}\n**Windows (64 Bit):** ${{ needs.build-windows-amd64.result }}\n**Linux:** ${{ needs.build-linux.result }}\n**Android:** ${{ needs.build-android.result }}\n**MacOS:** ${{ needs.build-macos.result }}"},
-            {"name":"Download Links","value":"**Bare:** ${{ needs.build-love.outputs.downloadUrl}}\n**Windows (32 Bit):** ${{ needs.build-windows-x86.outputs.downloadUrl }}\n**Windows (64 Bit):** ${{ needs.build-windows-amd64.outputs.downloadUrl }}\n**Linux:** ${{ needs.build-linux.outputs.downloadUrl }}\n**Android:** ${{ needs.build-android.outputs.downloadUrl }}\n**MacOS:** ${{ needs.build-macos.outputs.downloadUrl}}"}
+            {"name":"Status","value":"**Automatic Test:** ${{ needs.auto-test.result }}\n**Bare:** ${{ needs.build-love.result }}\n**Windows (32 Bit):** ${{ needs.build-windows-x86.result }}\n**Windows (64 Bit):** ${{ needs.build-windows-amd64.result }}\n**Linux:** ${{ needs.build-linux.result }}\n**Android:** ${{ needs.build-android.result }}\n**MacOS:** ${{ needs.build-macos-portable.result }}"},
+            {"name":"Download Links","value":"**Bare:** ${{ needs.build-love.outputs.downloadUrl}}\n**Windows (32 Bit):** ${{ needs.build-windows-x86.outputs.downloadUrl }}\n**Windows (64 Bit):** ${{ needs.build-windows-amd64.outputs.downloadUrl }}\n**Linux:** ${{ needs.build-linux.outputs.downloadUrl }}\n**Android:** ${{ needs.build-android.outputs.downloadUrl }}\n**MacOS:** ${{ needs.build-macos-portable.outputs.downloadUrl}}"}
             ]
             }'
 

@@ -1,0 +1,185 @@
+name: "Build macOS portable"
+description: "build macOS dmg file"
+inputs:
+  sourceDir:
+    required: true
+    description: "Root folder of the sources"
+  appName:
+    required: true
+    description: "App name"
+  buildType:
+    required: true
+    description: "Build type"
+  versionString:
+    required: true
+    description: "Version string of the product"
+  versionCode:
+    required: true
+    description: "Version code of the product"
+  output:
+    required: true
+    description: "Output path and name of the product"
+runs:
+  using: "composite"
+  steps:
+    - name: Clone love
+      shell: bash
+      run: |
+        git clone --recurse-submodules https://github.com/love2d/love -b 11.4 --depth 1 --shallow-submodules
+    - name: Download framework SDK
+      uses: ./.github/actions/get-unzip
+      with:
+        url: https://github.com/love2d/love/releases/download/11.4/love-11.4-apple-libraries.zip
+    - name: Move SDK and love package
+      shell: bash
+      run: |
+        mv ./love-apple-dependencies/macOS/Frameworks/ ./love/platform/xcode/macosx
+        mv ./love-apple-dependencies/iOS/libraries/ ./love/platform/xcode/ios
+        mv ./target.love ./love/platform/xcode/
+    - name: Process icons
+      shell: bash
+      run: |
+        rm -rf ./love/platform/xcode/Images.xcassets/OS\ X\ AppIcon.appiconset/*.png
+        iconutil -c iconset -o ./icon.iconset ${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/icon.icns
+        mv -f ./icon.iconset/* ./love/platform/xcode/Images.xcassets/OS\ X\ AppIcon.appiconset/
+    - name: Modify XCode project
+      shell: bash
+      run: |
+        npm i plist xcode
+
+        cat <<EOT >> temp.js
+        const fs = require('fs');
+        const plist = require('plist');
+        const xcode = require('xcode');
+
+        const pbxprojPath = './love/platform/xcode/love.xcodeproj/project.pbxproj';
+        const project = xcode.project(pbxprojPath).parseSync();
+        project.updateBuildProperty('PRODUCT_NAME', '${{ inputs.appName }}', null, 'love-macosx')
+        const resourcesGroupKey = project.findPBXGroupKey({name: 'Resources'});
+        const targetKey = project.findTargetKey('"love-macosx"')
+        project.addResourceFile('./target.love', {target: targetKey}, resourcesGroupKey);
+        console.info('Project info updated.');
+        fs.writeFileSync(pbxprojPath, project.writeSync());
+
+        const plistPath = './love/platform/xcode/macosx/love-macosx.plist';
+        const parsed = plist['parse'](fs.readFileSync(plistPath, 'utf8'));
+        parsed['CFBundleExecutable'] = '${{ inputs.appName }}';
+        parsed['CFBundleName'] = '${{ inputs.appName }}'.replace(/_/g, ' ');
+        parsed['NSHumanReadableCopyright'] = 'Copyright © 2019-' + new Date().getFullYear() + ' 26F-Studio. Some Rights Reserved.';
+        delete parsed['CFBundleDocumentTypes'];
+        delete parsed['UTExportedTypeDeclarations'];
+        console.info(parsed);
+        fs.writeFileSync(plistPath, plist['build'](parsed));
+
+        const iconPath = './love/platform/xcode/Images.xcassets/OS X AppIcon.appiconset/Contents.json';
+        const iconContents = JSON.parse(fs.readFileSync(iconPath, 'utf8'));
+        iconContents.images.forEach(image => {
+            image.filename = 'icon_' + image.size + (image.scale === '2x' ? '@2x' : '') + '.png';
+        });
+        console.info(iconContents);
+        fs.writeFileSync(iconPath, JSON.stringify(iconContents));
+        EOT
+
+        node temp.js
+    - name: Build MacOS archive
+      shell: bash
+      run: |
+        mkdir -p ./love/platform/xcode/build/Debug
+        mkdir -p ./love/platform/xcode/build/Release
+        xcodebuild clean archive -quiet \
+        -project ./love/platform/xcode/love.xcodeproj \
+        -scheme love-macosx \
+        -configuration Release \
+        -archivePath ./${{ inputs.appName }}.xcarchive \
+        OTHER_CFLAGS="-Wno-unused-parameter -Wno-sign-compare -Wno-conditional-uninitialized -Wno-strict-prototypes" \
+        MARKETING_VERSION='${{ inputs.versionString }}' \
+        MACOSX_DEPLOYMENT_TARGET="10.9" \
+        MARKETING_VERSION="1.0.0" \
+        PRODUCT_BUNDLE_IDENTIFIER=org.26f-studio.$(echo "${{ inputs.appName }}" | sed "s/_/-/g")
+    - name: Export archive
+      shell: bash
+      run: |
+        xcodebuild -exportArchive \
+        -archivePath ./${{ inputs.appName }}.xcarchive \
+        -exportPath . \
+        -exportOptionsPlist ./love/platform/xcode/macosx/macos-copy-app.plist
+    - name: Create keychain and import certificate
+      env:
+        CERTIFICATE_FILENAME: developerID_application.p12
+        KEYCHAIN_FILENAME: CI.keychain
+        KEYCHAIN_PASSWORD: 26F-Studio-CI
+      shell: bash
+      run: |
+        echo "${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION }}" | base64 --decode > $CERTIFICATE_FILENAME
+        security create-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
+        security default-keychain -s $KEYCHAIN_FILENAME
+        security unlock-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
+        security import $CERTIFICATE_FILENAME -k $KEYCHAIN_FILENAME -P "${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD }}" -T /usr/bin/codesign
+        security find-identity -v
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
+    - name: Codesign application bundle
+      env:
+        KEYCHAIN_FILENAME: CI.keychain
+        KEYCHAIN_PASSWORD: 26F-Studio-CI
+      shell: bash
+      run: |
+        security unlock-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
+        [[ $(security find-identity -v) =~ ([0-9A-F]{40}) ]]
+        codesign --deep \
+        --entitlements ./love/platform/xcode/love.entitlements \
+        --force --strict --timestamp \
+        --options runtime \
+        -s ${BASH_REMATCH[1]} \
+        ./${{ inputs.appName }}.app -v
+    - name: Notarize application bundle
+      uses: GuillaumeFalourd/xcode-notarize@v1
+      with:
+        product-path: ./${{ inputs.appName }}.app
+        appstore-connect-username: ${{ secrets.APPLE_ACCOUNT_USERNAME }}
+        appstore-connect-password: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
+        verbose: true
+    - name: Create dmg file
+      shell: bash
+      run: |
+        brew install create-dmg
+        create-dmg \
+        --volname "${{ inputs.appName }} for macOS" \
+        --volicon "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.icns" \
+        --window-pos 200 120 \
+        --window-size 800 500 \
+        --icon-size 100 \
+        --icon "${{ inputs.appName }}.app" 239 203 \
+        --background "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.tiff" \
+        --hide-extension "${{ inputs.appName }}.app" \
+        --app-drop-link 565 203 \
+        "${{ inputs.output }}" \
+        "${{ inputs.appName }}.app"
+    - name: Codesign dmg file
+      env:
+        KEYCHAIN_FILENAME: CI.keychain
+        KEYCHAIN_PASSWORD: 26F-Studio-CI
+      shell: bash
+      run: |
+        security unlock-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
+        [[ $(security find-identity -v) =~ ([0-9A-F]{40}) ]]
+        codesign --deep \
+        --entitlements ./love/platform/xcode/love.entitlements \
+        --force --strict --timestamp \
+        --options runtime \
+        -s ${BASH_REMATCH[1]} \
+        ./${{ inputs.output }} -v
+    - name: Notarize dmg file
+      uses: GuillaumeFalourd/xcode-notarize@v1
+      with:
+        product-path: ./${{ inputs.output }}
+        appstore-connect-username: ${{ secrets.APPLE_ACCOUNT_USERNAME }}
+        appstore-connect-password: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
+        verbose: true
+    - name: Staple dmg file
+      uses: devbotsxyz/xcode-staple@v1
+      with:
+        product-path: ./${{ inputs.output }}
+    - name: Finalize
+      shell: bash
+      run: |
+        spctl -a -t open --context context:primary-signature -vv ./${{ inputs.output }}
