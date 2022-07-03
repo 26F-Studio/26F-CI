@@ -99,7 +99,6 @@ runs:
     - name: Zip app
       shell: bash
       run: |
-        ls -l
         ditto -c -k --sequesterRsrc --keepParent ./${{ inputs.appName }}.app ${{ inputs.output }}
 
     # - name: Fastlane match

@@ -448,8 +448,8 @@ jobs:
             "fields":[
             {"name":"Version","value":"${{ github.event.inputs.versionString }}","inline": true},
             {"name":"Package Name","value":"${{ github.event.inputs.packageName }}","inline": true},
-            {"name":"Status","value":"**Automatic Test:** ${{ needs.auto-test.result }}\n**Windows (32 Bit):** ${{ needs.build-windows-x86.result }}\n**Windows (64 Bit):** ${{ needs.build-windows-amd64.result }}\n**Linux:** ${{ needs.build-linux.result }}\n**Android:** ${{ needs.build-android.result }}\n**Bare:** ${{ needs.build-love.result }}"},
-            {"name":"Download Links","value":"**Windows (32 Bit):** ${{ needs.build-windows-x86.outputs.downloadUrl }}\n**Windows (64 Bit):** ${{ needs.build-windows-amd64.outputs.downloadUrl }}\n**Linux:** ${{ needs.build-linux.outputs.downloadUrl }}\n**Android:** ${{ needs.build-android.outputs.downloadUrl }}\n**Bare:** ${{ needs.build-love.outputs.downloadUrl}}"}
+            {"name":"Status","value":"**Automatic Test:** ${{ needs.auto-test.result }}\n**Bare:** ${{ needs.build-love.result }}\n**Windows (32 Bit):** ${{ needs.build-windows-x86.result }}\n**Windows (64 Bit):** ${{ needs.build-windows-amd64.result }}\n**Linux:** ${{ needs.build-linux.result }}\n**Android:** ${{ needs.build-android.result }}\n**MacOS:** ${{ needs.build-macos.result }}"},
+            {"name":"Download Links","value":"**Bare:** ${{ needs.build-love.outputs.downloadUrl}}\n**Windows (32 Bit):** ${{ needs.build-windows-x86.outputs.downloadUrl }}\n**Windows (64 Bit):** ${{ needs.build-windows-amd64.outputs.downloadUrl }}\n**Linux:** ${{ needs.build-linux.outputs.downloadUrl }}\n**Android:** ${{ needs.build-android.outputs.downloadUrl }}\n**MacOS:** ${{ needs.build-macos.outputs.downloadUrl}}"}
             ]
             }'
 
