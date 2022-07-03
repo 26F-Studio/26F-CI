@@ -63,7 +63,7 @@ runs:
   # - name: Download love
   #   shell: bash
   #   run: |
-  #     curl -L https://github.com/love2d/love/releases/download/11.4/love-11.4-x86_64.AppImage
+  #     curl -L --retry 5 https://github.com/love2d/love/releases/download/11.4/love-11.4-x86_64.AppImage
   # - name: Extract love
   #   shell: bash
   #   run: |

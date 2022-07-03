@@ -1,5 +1,5 @@
-name: 'get and unzip'
-description: 'cURL and then 7-zip x'
+name: 'Get and unzip'
+description: 'CURL and then 7-zip x'
 inputs:
   url:
     required: true
