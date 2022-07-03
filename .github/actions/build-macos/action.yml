@@ -1,5 +1,5 @@
-name: 'build Mac OS'
-description: 'build Mac OS package'
+name: "build Mac OS"
+description: "build Mac OS package"
 inputs:
   sourceDir:
     required: true
@@ -18,7 +18,7 @@ inputs:
     description: "Version code of the product"
   output:
     required: true
-    description: 'Output path and name of the product'
+    description: "Output path and name of the product"
 runs:
   using: "composite"
   steps:
@@ -34,6 +34,7 @@ runs:
       shell: bash
       run: |
         mv ./love-apple-dependencies/macOS/Frameworks/ ./love/platform/xcode/macosx
+        mv ./love-apple-dependencies/iOS/libraries/ ./love/platform/xcode/ios
         mv ./target.love ./love/platform/xcode/
     - name: Process icons
       shell: bash
@@ -53,7 +54,8 @@ runs:
 
         const pbxprojPath = './love/platform/xcode/love.xcodeproj/project.pbxproj';
         const project = xcode.project(pbxprojPath).parseSync();
-        project.updateProductName('${{ inputs.appName }}');
+        // project.updateProductName('${{ inputs.appName }}');
+        project.pbxXCBuildConfigurationSection('MACOSX_DEPLOYMENT_TARGET', '10.9');
         const resourcesGroupKey = project.findPBXGroupKey({name: 'Resources'});
         const targetKey = project.findTargetKey('"love-macosx"')
         project.addResourceFile('./target.love', {target: targetKey}, resourcesGroupKey);
@@ -64,6 +66,7 @@ runs:
         const parsed = plist['parse'](fs.readFileSync(plistPath, 'utf8'));
         parsed['CFBundleName'] = '${{ inputs.appName }}';
         parsed['NSHumanReadableCopyright'] = 'Copyright © 2019-' + new Date().getFullYear() + ' 26F-Studio. Some Rights Reserved.';
+        // delete parsed['CFBundleDocumentTypes'];
         delete parsed['UTExportedTypeDeclarations'];
         console.info(parsed);
         fs.writeFileSync(plistPath, plist['build'](parsed));
@@ -76,17 +79,19 @@ runs:
         console.info(iconContents);
         fs.writeFileSync(iconPath, JSON.stringify(iconContents));
         EOT
-        
+
         node temp.js
     - name: Build MacOS archive
       shell: bash
       run: |
+        mkdir -p ./love/platform/xcode/build/Debug
+        mkdir -p ./love/platform/xcode/build/Release
         xcodebuild clean archive -quiet \
         -project ./love/platform/xcode/love.xcodeproj \
         -scheme love-macosx \
         -configuration Release \
         -archivePath ./${{ inputs.appName }}.xcarchive \
-        OTHER_CFLAGS="-Wno-unused-variable" \
+        OTHER_CFLAGS="-Wno-unused-parameter -Wno-sign-compare -Wno-conditional-uninitialized -Wno-strict-prototypes" \
         MARKETING_VERSION='${{ inputs.versionString }}' \
         PRODUCT_BUNDLE_IDENTIFIER=org.26f-studio.$(echo "${{ inputs.appName }}" | sed "s/_/-/g")
     - name: Export archive
@@ -99,7 +104,8 @@ runs:
     - name: Zip app
       shell: bash
       run: |
-        ditto -c -k --sequesterRsrc --keepParent ./${{ inputs.appName }}.app ${{ inputs.output }}
+        ls -l
+        ditto -c -k --sequesterRsrc --keepParent ./*.app ${{ inputs.output }}
 
     # - name: Fastlane match
     #   uses: maierj/fastlane-action@v2.0.1
