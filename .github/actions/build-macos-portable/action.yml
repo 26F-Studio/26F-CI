@@ -40,8 +40,8 @@ runs:
       shell: python
       run: |
         import re
-        print(f'::set-output bundle-id=org.26f-studio.{re.sub(r"[^A-Za-z0-9]+","-","${{ inputs.appName }}")}')
-        print(f'::set-output product-name={re.sub(r"[^A-Za-z0-9]+","_","${{ inputs.appName }}")}')
+        print('::set-output bundle-id=org.26f-studio.' + re.sub(r'[^A-Za-z0-9]+', '-', '${{ inputs.appName }}'))
+        print('::set-output product-name=' + re.sub(r'[^A-Za-z0-9]+', '_', '${{ inputs.appName }}'))
     - name: Clone love
       shell: bash
       run: |

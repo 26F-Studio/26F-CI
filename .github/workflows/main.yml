@@ -101,7 +101,7 @@ jobs:
         run: |
           mv ./target.love ${{ env.PACKAGE_NAME }}
       - name: Upload artifact
-        if: ${{ github.event.inputs.uploadArtifact }} == 'true'
+        if: github.event.inputs.uploadArtifact == 'true'
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.event.inputs.packageName }}_Bare
