@@ -163,15 +163,15 @@ runs:
       run: |
         brew install create-dmg
         create-dmg \
-        --volname "${{ steps.process-app-name.outputs.product-name }}" \
-        --volicon "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.icns" \
-        --window-pos 200 120 \
-        --window-size 800 500 \
-        --icon-size 100 \
-        --icon "${{ steps.process-app-name.outputs.product-name }}.app" 239 203 \
-        --background "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.tiff" \
-        --hide-extension "${{ steps.process-app-name.outputs.product-name }}.app" \
         --app-drop-link 565 203 \
+        --background "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.jpg" \
+        --hide-extension "${{ steps.process-app-name.outputs.product-name }}.app" \
+        --icon "${{ steps.process-app-name.outputs.product-name }}.app" 239 203 \
+        --icon-size 100 \
+        --volicon "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.icns" \
+        --volname "${{ steps.process-app-name.outputs.product-name }}" \
+        --window-pos 160 90 \
+        --window-size 1024 612 \
         "${{ inputs.output }}" \
         "${{ steps.process-app-name.outputs.product-name }}.app"
     - name: Codesign dmg file
