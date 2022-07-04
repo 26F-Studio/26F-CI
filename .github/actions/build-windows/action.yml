@@ -22,6 +22,12 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Process app name
+      id: process-app-name
+      shell: python
+      run: |
+        import re
+        print(f'::set-output product-name={re.sub(r"[^A-Za-z0-9]+","_","${{ inputs.appName }}")}')
     - name: Download love
       uses: ./.github/actions/get-unzip
       with:
@@ -49,15 +55,15 @@ runs:
       shell: pwsh
       run: |
         cp ${{ inputs.sourceDir }}/.github/build/windows/${{ inputs.buildType }}/icon.ico .\icon.ico
-        cmd /c copy /b .\love\love.exe + .\target.love .\love\${{ inputs.appName }}.exe
+        cmd /c copy /b .\love\love.exe + .\target.love .\love\${{ steps.process-app-name.outputs.product-name }}.exe
         del .\love\love.exe
         del .\love\lovec.exe
         del .\love\game.ico
         del .\love\love.ico
         del .\love\changes.txt
         del .\love\readme.txt
-        cmd /c '".\ResourceHacker.exe" -open ".\love\${{ inputs.appName }}.exe" -save ".\love\${{ inputs.appName }}.exe" -action delete -mask ICONGROUP,,'
-        cmd /c '".\ResourceHacker.exe" -open ".\target.rc" -save ".\${{ inputs.appName }}.res" -action compile'
-        cmd /c '".\ResourceHacker.exe" -open ".\love\${{ inputs.appName }}.exe" -save ".\love\${{ inputs.appName }}.exe" -action addoverwrite -res ".\icon.ico" -mask ICONGROUP,1,'
-        cmd /c '".\ResourceHacker.exe" -open ".\love\${{ inputs.appName }}.exe" -save ".\love\${{ inputs.appName }}.exe" -action addoverwrite -res ".\${{ inputs.appName }}.res" -mask VERSIONINFO,1,'
+        cmd /c '".\ResourceHacker.exe" -open ".\love\${{ steps.process-app-name.outputs.product-name }}.exe" -save ".\love\${{ steps.process-app-name.outputs.product-name }}.exe" -action delete -mask ICONGROUP,,'
+        cmd /c '".\ResourceHacker.exe" -open ".\target.rc" -save ".\${{ steps.process-app-name.outputs.product-name }}.res" -action compile'
+        cmd /c '".\ResourceHacker.exe" -open ".\love\${{ steps.process-app-name.outputs.product-name }}.exe" -save ".\love\${{ steps.process-app-name.outputs.product-name }}.exe" -action addoverwrite -res ".\icon.ico" -mask ICONGROUP,1,'
+        cmd /c '".\ResourceHacker.exe" -open ".\love\${{ steps.process-app-name.outputs.product-name }}.exe" -save ".\love\${{ steps.process-app-name.outputs.product-name }}.exe" -action addoverwrite -res ".\${{ steps.process-app-name.outputs.product-name }}.res" -mask VERSIONINFO,1,'
         7z a -tzip ${{ inputs.output }} ./love/*

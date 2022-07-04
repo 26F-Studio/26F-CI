@@ -35,6 +35,12 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Process app name
+      id: process-app-name
+      shell: python
+      run: |
+        import re
+        print(f'::set-output bundle-id=org.f26_studio.{re.sub(r"[^A-Za-z0-9]+", "_", "${{ inputs.appName }}")}')
     - name: Get Java
       uses: actions/setup-java@v2
       with:
@@ -66,7 +72,7 @@ runs:
         with open("./love-android/app/build.gradle", "r+", encoding='utf-8') as file:
           data = file.read()
           data = data\
-            .replace('org.love2d.android', 'org.f26_studio.${{ inputs.appName }}')\
+            .replace('org.love2d.android', '${{ steps.process-app-name.outputs.bundle-id }}')\
             .replace('30', '${{ inputs.versionCode }}')\
             .replace('11.4', '${{ inputs.versionString }}')
           insert_pos = data.find('\n', data.find('proguardFiles')) + 1

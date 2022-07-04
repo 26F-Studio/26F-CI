@@ -16,6 +16,12 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Process app name
+      id: process-app-name
+      shell: python
+      run: |
+        import re
+        print(f'::set-output product-name={re.sub(r"[^A-Za-z0-9]+","_","${{ inputs.appName }}")}')
     - name: Download AppImageKit
       shell: bash
       run: |
@@ -33,7 +39,7 @@ runs:
         cat ./squashfs-root/bin/love ./target.love > ./squashfs-root/bin/app
         chmod +x ./squashfs-root/bin/app
         rm -rf ./squashfs-root/love.desktop ./squashfs-root/love.svg ./squashfs-root/.DirIcon
-        mv ${{ inputs.sourceDir }}/.github/build/linux/${{ inputs.buildType }}/template.desktop ./squashfs-root/${{ inputs.appName }}.desktop
+        mv ${{ inputs.sourceDir }}/.github/build/linux/${{ inputs.buildType }}/template.desktop ./squashfs-root/${{ steps.process-app-name.outputs.product-name }}.desktop
         mv ${{ inputs.sourceDir }}/.github/build/linux/${{ inputs.buildType }}/icon.png ./squashfs-root/icon.png
         ln -s ./squashfs-root/icon.png ./squashfs-root/.DirIcon
         ./appimagetool-x86_64.AppImage ./squashfs-root ${{ inputs.output }}
