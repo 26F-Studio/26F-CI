@@ -148,6 +148,7 @@ runs:
       uses: GuillaumeFalourd/xcode-notarize@v1
       with:
         product-path: ./${{ inputs.appName }}.app
+        primary-bundle-id: org.26f-studio.$(echo "${{ inputs.appName }}" | sed "s/_/-/g")
         appstore-connect-username: ${{ inputs.APPLE_ACCOUNT_USERNAME }}
         appstore-connect-password: ${{ inputs.APPLE_ACCOUNT_PASSWORD }}
         verbose: true
@@ -185,6 +186,7 @@ runs:
       uses: GuillaumeFalourd/xcode-notarize@v1
       with:
         product-path: ./${{ inputs.output }}
+        primary-bundle-id: org.26f-studio.$(echo "${{ inputs.appName }}" | sed "s/_/-/g")
         appstore-connect-username: ${{ inputs.APPLE_ACCOUNT_USERNAME }}
         appstore-connect-password: ${{ inputs.APPLE_ACCOUNT_PASSWORD }}
         verbose: true
