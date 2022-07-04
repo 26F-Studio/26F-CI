@@ -37,11 +37,12 @@ runs:
   steps:
     - name: Process app name
       id: process-app-name
-      shell: python
+      shell: python3 {0}
       run: |
+        import os
         import re
-        print('::set-output bundle-id=org.26f-studio.' + re.sub(r'[^A-Za-z0-9]+', '-', '${{ inputs.appName }}'))
-        print('::set-output product-name=' + re.sub(r'[^A-Za-z0-9]+', '_', '${{ inputs.appName }}'))
+        os.system('echo ::set-output name=bundle-id::org.26f-studio.' + re.sub(r'[^A-Za-z0-9]+', '-', '${{ inputs.appName }}'))
+        os.system('echo ::set-output name=product-name::' + re.sub(r'[^A-Za-z0-9]+', '_', '${{ inputs.appName }}'))
     - name: Clone love
       shell: bash
       run: |

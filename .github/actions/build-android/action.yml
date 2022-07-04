@@ -37,10 +37,11 @@ runs:
   steps:
     - name: Process app name
       id: process-app-name
-      shell: python
+      shell: python3 {0}
       run: |
+        import os
         import re
-        print(f'::set-output bundle-id=org.f26_studio.{re.sub(r"[^A-Za-z0-9]+", "_", "${{ inputs.appName }}")}')
+        os.system('echo ::set-output name=bundle-id::org.F26_Studio.' + re.sub(r'[^A-Za-z0-9]+', '_', '${{ inputs.appName }}'))
     - name: Get Java
       uses: actions/setup-java@v2
       with:
