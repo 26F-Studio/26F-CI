@@ -31,6 +31,9 @@ inputs:
   APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD:
     required: true
     description: "Developer ID Application certificate password"
+  APPLE_PP_DEVELOPER_ID_APPLICATION:
+    required: true
+    description: "Developer ID Application provisioning profile"
 
 runs:
   using: "composite"
@@ -113,20 +116,25 @@ runs:
         EOT
 
         node temp.js
-    - name: Create keychain and import certificate
+    - name: Create keychain, import certificate and provisioning profile
       env:
         CERTIFICATE_FILENAME: developerID_application.p12
         KEYCHAIN_FILENAME: CI.keychain
         KEYCHAIN_PASSWORD: 26F-Studio-CI
+        PROVISIONING_PROFILE_FILENAME: developerID_application.provisionprofile
       shell: bash
       run: |
-        echo "${{ inputs.APPLE_CERT_DEVELOPER_ID_APPLICATION }}" | base64 --decode > $CERTIFICATE_FILENAME
+        echo "${{ inputs.APPLE_PP_DEVELOPER_ID_APPLICATION }}" | base64 --decode > $CERTIFICATE_FILENAME
         security create-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
         security default-keychain -s $KEYCHAIN_FILENAME
         security unlock-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
         security import $CERTIFICATE_FILENAME -k $KEYCHAIN_FILENAME -P "${{ inputs.APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD }}" -T /usr/bin/codesign
         security find-identity -v
         security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
+        
+        echo "${{ inputs.APPLE_CERT_DEVELOPER_ID_APPLICATION }}" | base64 --decode > $PROVISIONING_PROFILE_FILENAME
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        cp $PROVISIONING_PROFILE_FILENAME ~/Library/MobileDevice/Provisioning\ Profiles
     - name: Build MacOS app
       env:
         KEYCHAIN_FILENAME: CI.keychain

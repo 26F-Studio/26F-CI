@@ -41,6 +41,10 @@ on:
         description: "Upload product to artifacts or not"
         required: false
         default: "true"
+      provisioningProfileDeveloperIdApplication:
+        description: "Provisioning profile base64 (using 'developer id application' certificate)"
+        required: false
+        default: ""
 
 env:
   SOURCE_DIR: ./src/
@@ -272,6 +276,7 @@ jobs:
   build-macos-portable:
     runs-on: macos-latest
     needs: build-love
+    if: github.event.inputs.provisioningProfileDeveloperIdApplication != ''
     env:
       PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_macOS.dmg
     outputs:
@@ -303,6 +308,7 @@ jobs:
           APPLE_ACCOUNT_USERNAME: ${{ secrets.APPLE_ACCOUNT_USERNAME }}
           APPLE_CERT_DEVELOPER_ID_APPLICATION: ${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION }}
           APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD: ${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD }}
+          APPLE_PP_DEVELOPER_ID_APPLICATION: ${{ github.event.inputs.provisioningProfileDeveloperIdApplication }}
       - name: Upload artifact
         if: github.event.inputs.uploadArtifact == 'true'
         uses: actions/upload-artifact@v3
