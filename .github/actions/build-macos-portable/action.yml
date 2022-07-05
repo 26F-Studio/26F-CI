@@ -157,21 +157,20 @@ runs:
         primary-bundle-id: ${{ steps.process-app-name.outputs.bundle-id }}
         appstore-connect-username: ${{ inputs.APPLE_ACCOUNT_USERNAME }}
         appstore-connect-password: ${{ inputs.APPLE_ACCOUNT_PASSWORD }}
-        verbose: true
     - name: Create dmg file
       shell: bash
       run: |
         brew install create-dmg
         create-dmg \
-        --app-drop-link 565 203 \
+        --app-drop-link 712 250 \
         --background "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.jpg" \
         --hide-extension "${{ steps.process-app-name.outputs.product-name }}.app" \
-        --icon "${{ steps.process-app-name.outputs.product-name }}.app" 239 203 \
-        --icon-size 100 \
+        --icon "${{ steps.process-app-name.outputs.product-name }}.app" 317 250 \
+        --icon-size 144 \
         --volicon "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.icns" \
         --volname "${{ steps.process-app-name.outputs.product-name }}" \
         --window-pos 160 90 \
-        --window-size 1024 612 \
+        --window-size 1024 604 \
         "${{ inputs.output }}" \
         "${{ steps.process-app-name.outputs.product-name }}.app"
     - name: Codesign dmg file
@@ -195,7 +194,6 @@ runs:
         primary-bundle-id: ${{ steps.process-app-name.outputs.bundle-id }}
         appstore-connect-username: ${{ inputs.APPLE_ACCOUNT_USERNAME }}
         appstore-connect-password: ${{ inputs.APPLE_ACCOUNT_PASSWORD }}
-        verbose: true
     - name: Staple dmg file
       uses: devbotsxyz/xcode-staple@v1
       with:
