@@ -77,11 +77,10 @@ jobs:
           import json
           import os
           payload = base64.b64decode('${{ github.event.inputs.payload }}'.encode('utf-8')).decode('utf-8')
-          print(payload)
           parameters = json.loads(payload)
-          print(parameters)
           for key, value in parameters.items():
-            os.system(f'echo ::set-output name={key}::{value}')
+            print(key, '->', value)
+            os.system(f'echo ::set-output name={key}::"{value}"')
       - name: Display inputs
         run: |
           DISPLAY_STRING=$(cat << EOF
