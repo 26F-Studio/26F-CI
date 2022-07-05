@@ -46,6 +46,10 @@ runs:
         import re
         os.system('echo ::set-output name=bundle-id::org.26f-studio.' + re.sub(r'[^A-Za-z0-9]+', '-', '${{ inputs.appName }}'))
         os.system('echo ::set-output name=product-name::' + re.sub(r'[^A-Za-z0-9]+', '_', '${{ inputs.appName }}'))
+    - name: Hide provisioning profile
+      shell: bash
+      run: |
+        echo "::add-mask::${{ inputs.APPLE_PP_DEVELOPER_ID_APPLICATION }}" 
     - name: Clone love
       shell: bash
       run: |
@@ -124,14 +128,14 @@ runs:
         PROVISIONING_PROFILE_FILENAME: developerID_application.provisionprofile
       shell: bash
       run: |
-        echo "${{ inputs.APPLE_PP_DEVELOPER_ID_APPLICATION }}" | base64 --decode > $CERTIFICATE_FILENAME
+        echo "${{ inputs.APPLE_CERT_DEVELOPER_ID_APPLICATION }}" | base64 --decode > $CERTIFICATE_FILENAME
         security create-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
         security default-keychain -s $KEYCHAIN_FILENAME
         security unlock-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
         security import $CERTIFICATE_FILENAME -k $KEYCHAIN_FILENAME -P "${{ inputs.APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD }}" -T /usr/bin/codesign
         security find-identity -v
         security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
-        
+
         echo "${{ inputs.APPLE_CERT_DEVELOPER_ID_APPLICATION }}" | base64 --decode > $PROVISIONING_PROFILE_FILENAME
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
         cp $PROVISIONING_PROFILE_FILENAME ~/Library/MobileDevice/Provisioning\ Profiles
