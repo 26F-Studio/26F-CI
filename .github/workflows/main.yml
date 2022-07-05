@@ -1,50 +1,54 @@
 name: "26F Studio Remote CI"
 
 on:
-  repository_dispatch:
+  workflow_dispatch:
     inputs:
-      repository:
-        description: "Target repository (Owner/Repo)"
+      payload:
         required: true
-      ref:
-        description: "The branch, tag or SHA to checkout"
-        required: false
-        default: ""
-      appName:
-        description: "App name (Would be used in description files)"
-        required: false
-        default: "Love_App"
-      buildType:
-        description: "Build type (Would be used by accessing assets)"
-        required: true
-      buildList:
-        description: "List of folders and files to be built (seperate by spaces)"
-        required: false
-        default: "./*"
-      packageName:
-        description: "Base name of the package"
-        required: false
-        default: "Love_App"
-      versionName:
-        description: "Custom name for the version"
-        required: false
-        default: "V0.0.1"
-      versionString:
-        description: "Version string (looks like 1.2.3)"
-        required: false
-        default: "0.0.1"
-      versionCode:
-        description: "Version code (looks like 123)"
-        required: false
-        default: "1"
-      uploadArtifact:
-        description: "Upload product to artifacts or not"
-        required: false
-        default: "true"
-      provisioningProfileDeveloperIdApplication:
-        description: "Provisioning profile base64 (using 'developer id application' certificate)"
-        required: false
-        default: ""
+        description: |
+          Payload JSON, Support parameters:
+            repository:
+              description: "Target repository (Owner/Repo)"
+              required: true
+            ref:
+              description: "The branch, tag or SHA to checkout"
+              required: false
+              default: ""
+            appName:
+              description: "App name (Would be used in description files)"
+              required: false
+              default: "Love_App"
+            buildType:
+              description: "Build type (Would be used by accessing assets)"
+              required: true
+            buildList:
+              description: "List of folders and files to be built (seperate by spaces)"
+              required: false
+              default: "./*"
+            packageName:
+              description: "Base name of the package"
+              required: false
+              default: "Love_App"
+            versionName:
+              description: "Custom name for the version"
+              required: false
+              default: "V0.0.1"
+            versionString:
+              description: "Version string (looks like 1.2.3)"
+              required: false
+              default: "0.0.1"
+            versionCode:
+              description: "Version code (looks like 123)"
+              required: false
+              default: "1"
+            uploadArtifact:
+              description: "Upload product to artifacts or not"
+              required: false
+              default: "true"
+            provisioningProfileDeveloperIdApplication:
+              description: "Provisioning profile base64 (using 'developer id application' certificate)"
+              required: false
+              default: ""
 
 env:
   SOURCE_DIR: ./src/
@@ -56,16 +60,16 @@ jobs:
       - name: Display inputs
         run: |
           DISPLAY_STRING=$(cat << EOF
-          repository: ${{ github.event.inputs.repository }}
-          ref: ${{ github.event.inputs.ref }}
-          appName: ${{ github.event.inputs.appName }}
-          buildType: ${{ github.event.inputs.buildType }}
-          buildList: ${{ github.event.inputs.buildList }}
-          packageName: ${{ github.event.inputs.packageName }}
-          versionName: ${{ github.event.inputs.versionName }}
-          versionString: ${{ github.event.inputs.versionString }}
-          versionCode: ${{ github.event.inputs.versionCode }}
-          uploadArtifact: ${{ github.event.inputs.uploadArtifact }}
+          repository: ${{ fromJSON(github.event.inputs.payload).repository }}
+          ref: ${{ fromJSON(github.event.inputs.payload).ref }}
+          appName: ${{ fromJSON(github.event.inputs.payload).appName }}
+          buildType: ${{ fromJSON(github.event.inputs.payload).buildType }}
+          buildList: ${{ fromJSON(github.event.inputs.payload).buildList }}
+          packageName: ${{ fromJSON(github.event.inputs.payload).packageName }}
+          versionName: ${{ fromJSON(github.event.inputs.payload).versionName }}
+          versionString: ${{ fromJSON(github.event.inputs.payload).versionString }}
+          versionCode: ${{ fromJSON(github.event.inputs.payload).versionCode }}
+          uploadArtifact: ${{ fromJSON(github.event.inputs.payload).uploadArtifact }}
           EOF
           )
           DISPLAY_STRING="${DISPLAY_STRING//'%'/'%25'}"
@@ -77,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: check-inputs
     env:
-      PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_Bare.love
+      PACKAGE_NAME: ./${{ fromJSON(github.event.inputs.payload).packageName }}_Bare.love
     outputs:
       download-url: ${{ steps.transfer.outputs.download-url }}
     steps:
@@ -86,8 +90,8 @@ jobs:
       - name: Clone target repository
         uses: actions/checkout@v3
         with:
-          repository: ${{ github.event.inputs.repository }}
-          ref: ${{ github.event.inputs.ref }}
+          repository: ${{ fromJSON(github.event.inputs.payload).repository }}
+          ref: ${{ fromJSON(github.event.inputs.payload).ref }}
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
       - name: Build love package
@@ -95,7 +99,7 @@ jobs:
         uses: ./.github/actions/build-bare
         with:
           sourceDir: ${{ env.SOURCE_DIR }}
-          buildList: ${{ github.event.inputs.buildList }}
+          buildList: ${{ fromJSON(github.event.inputs.payload).buildList }}
       - name: Upload love package
         uses: actions/upload-artifact@v3
         with:
@@ -105,10 +109,10 @@ jobs:
         run: |
           mv ./target.love ${{ env.PACKAGE_NAME }}
       - name: Upload artifact
-        if: github.event.inputs.uploadArtifact == 'true'
+        if: fromJSON(github.event.inputs.payload).uploadArtifact == 'true'
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.event.inputs.packageName }}_Bare
+          name: ${{ fromJSON(github.event.inputs.payload).packageName }}_Bare
           path: ${{ env.PACKAGE_NAME }}
       - name: Upload to WeTransfer
         id: transfer
@@ -126,8 +130,8 @@ jobs:
       - name: Clone target repository
         uses: actions/checkout@v3
         with:
-          repository: ${{ github.event.inputs.repository }}
-          ref: ${{ github.event.inputs.ref }}
+          repository: ${{ fromJSON(github.event.inputs.payload).repository }}
+          ref: ${{ fromJSON(github.event.inputs.payload).ref }}
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
       - name: Run auto tests
@@ -142,7 +146,7 @@ jobs:
       matrix:
         architecture: [32, 64]
     env:
-      PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_Win${{ matrix.architecture }}.zip
+      PACKAGE_NAME: ./${{ fromJSON(github.event.inputs.payload).packageName }}_Win${{ matrix.architecture }}.zip
     outputs:
       download-url-32: ${{ steps.transfer.outputs.download-url-32 }}
       download-url-64: ${{ steps.transfer.outputs.download-url-64 }}
@@ -152,8 +156,8 @@ jobs:
       - name: Clone target repository
         uses: actions/checkout@v3
         with:
-          repository: ${{ github.event.inputs.repository }}
-          ref: ${{ github.event.inputs.ref }}
+          repository: ${{ fromJSON(github.event.inputs.payload).repository }}
+          ref: ${{ fromJSON(github.event.inputs.payload).ref }}
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
       - name: Download love package
@@ -165,15 +169,15 @@ jobs:
         with:
           architecture: ${{ matrix.architecture }}
           sourceDir: ${{ env.SOURCE_DIR }}
-          appName: ${{ github.event.inputs.appName }}
-          buildType: ${{ github.event.inputs.buildType }}
-          versionString: ${{ github.event.inputs.versionString }}
+          appName: ${{ fromJSON(github.event.inputs.payload).appName }}
+          buildType: ${{ fromJSON(github.event.inputs.payload).buildType }}
+          versionString: ${{ fromJSON(github.event.inputs.payload).versionString }}
           output: ${{ env.PACKAGE_NAME }}
       - name: Upload artifact
-        if: github.event.inputs.uploadArtifact == 'true'
+        if: fromJSON(github.event.inputs.payload).uploadArtifact == 'true'
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.event.inputs.packageName }}_Win${{ matrix.architecture }}
+          name: ${{ fromJSON(github.event.inputs.payload).packageName }}_Win${{ matrix.architecture }}
           path: ${{ env.PACKAGE_NAME }}
       - name: Get transfer
         uses: ./.github/actions/get-unzip
@@ -189,7 +193,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-love
     env:
-      PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_Linux.AppImage
+      PACKAGE_NAME: ./${{ fromJSON(github.event.inputs.payload).packageName }}_Linux.AppImage
     outputs:
       download-url: ${{ steps.transfer.outputs.download-url }}
     steps:
@@ -198,8 +202,8 @@ jobs:
       - name: Clone target repository
         uses: actions/checkout@v3
         with:
-          repository: ${{ github.event.inputs.repository }}
-          ref: ${{ github.event.inputs.ref }}
+          repository: ${{ fromJSON(github.event.inputs.payload).repository }}
+          ref: ${{ fromJSON(github.event.inputs.payload).ref }}
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
       - name: Download love package
@@ -210,14 +214,14 @@ jobs:
         uses: ./.github/actions/build-linux
         with:
           sourceDir: ${{ env.SOURCE_DIR }}
-          appName: ${{ github.event.inputs.appName }}
-          buildType: ${{ github.event.inputs.buildType }}
+          appName: ${{ fromJSON(github.event.inputs.payload).appName }}
+          buildType: ${{ fromJSON(github.event.inputs.payload).buildType }}
           output: ${{ env.PACKAGE_NAME }}
       - name: Upload artifact
-        if: github.event.inputs.uploadArtifact == 'true'
+        if: fromJSON(github.event.inputs.payload).uploadArtifact == 'true'
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.event.inputs.packageName }}_Linux
+          name: ${{ fromJSON(github.event.inputs.payload).packageName }}_Linux
           path: ${{ env.PACKAGE_NAME }}
       - name: Upload to WeTransfer
         id: transfer
@@ -230,7 +234,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-love
     env:
-      PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_Android.apk
+      PACKAGE_NAME: ./${{ fromJSON(github.event.inputs.payload).packageName }}_Android.apk
     outputs:
       download-url: ${{ steps.transfer.outputs.download-url }}
     steps:
@@ -239,8 +243,8 @@ jobs:
       - name: Clone target repository
         uses: actions/checkout@v3
         with:
-          repository: ${{ github.event.inputs.repository }}
-          ref: ${{ github.event.inputs.ref }}
+          repository: ${{ fromJSON(github.event.inputs.payload).repository }}
+          ref: ${{ fromJSON(github.event.inputs.payload).ref }}
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
       - name: Download love package
@@ -251,20 +255,20 @@ jobs:
         uses: ./.github/actions/build-android
         with:
           sourceDir: ${{ env.SOURCE_DIR }}
-          appName: ${{ github.event.inputs.appName }}
-          buildType: ${{ github.event.inputs.buildType }}
-          versionString: ${{ github.event.inputs.versionString }}
-          versionCode: ${{ github.event.inputs.versionCode }}
+          appName: ${{ fromJSON(github.event.inputs.payload).appName }}
+          buildType: ${{ fromJSON(github.event.inputs.payload).buildType }}
+          versionString: ${{ fromJSON(github.event.inputs.payload).versionString }}
+          versionCode: ${{ fromJSON(github.event.inputs.payload).versionCode }}
           output: ${{ env.PACKAGE_NAME }}
           ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_KEYPASSWORD: ${{ secrets.ANDROID_KEYSTORE_KEYPASSWORD }}
           ANDROID_KEYSTORE_STOREPASSWORD: ${{ secrets.ANDROID_KEYSTORE_STOREPASSWORD }}
       - name: Upload artifact
-        if: github.event.inputs.uploadArtifact == 'true'
+        if: fromJSON(github.event.inputs.payload).uploadArtifact == 'true'
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.event.inputs.packageName }}_Android
+          name: ${{ fromJSON(github.event.inputs.payload).packageName }}_Android
           path: ${{ env.PACKAGE_NAME }}
       - name: Upload to WeTransfer
         id: transfer
@@ -276,9 +280,9 @@ jobs:
   build-macos-portable:
     runs-on: macos-latest
     needs: build-love
-    if: github.event.inputs.provisioningProfileDeveloperIdApplication != ''
+    if: fromJSON(github.event.inputs.payload).provisioningProfileDeveloperIdApplication != ''
     env:
-      PACKAGE_NAME: ./${{ github.event.inputs.packageName }}_macOS.dmg
+      PACKAGE_NAME: ./${{ fromJSON(github.event.inputs.payload).packageName }}_macOS.dmg
     outputs:
       download-url: ${{ steps.transfer.outputs.download-url }}
     steps:
@@ -287,8 +291,8 @@ jobs:
       - name: Clone target repository
         uses: actions/checkout@v3
         with:
-          repository: ${{ github.event.inputs.repository }}
-          ref: ${{ github.event.inputs.ref }}
+          repository: ${{ fromJSON(github.event.inputs.payload).repository }}
+          ref: ${{ fromJSON(github.event.inputs.payload).ref }}
           submodules: "recursive"
           path: ${{ env.SOURCE_DIR }}
       - name: Download love package
@@ -299,21 +303,21 @@ jobs:
         uses: ./.github/actions/build-macos-portable
         with:
           sourceDir: ${{ env.SOURCE_DIR }}
-          appName: ${{ github.event.inputs.appName }}
-          buildType: ${{ github.event.inputs.buildType }}
-          versionString: ${{ github.event.inputs.versionString }}
-          versionCode: ${{ github.event.inputs.versionCode }}
+          appName: ${{ fromJSON(github.event.inputs.payload).appName }}
+          buildType: ${{ fromJSON(github.event.inputs.payload).buildType }}
+          versionString: ${{ fromJSON(github.event.inputs.payload).versionString }}
+          versionCode: ${{ fromJSON(github.event.inputs.payload).versionCode }}
           output: ${{ env.PACKAGE_NAME }}
           APPLE_ACCOUNT_PASSWORD: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
           APPLE_ACCOUNT_USERNAME: ${{ secrets.APPLE_ACCOUNT_USERNAME }}
           APPLE_CERT_DEVELOPER_ID_APPLICATION: ${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION }}
           APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD: ${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD }}
-          APPLE_PP_DEVELOPER_ID_APPLICATION: ${{ github.event.inputs.provisioningProfileDeveloperIdApplication }}
+          APPLE_PP_DEVELOPER_ID_APPLICATION: ${{ fromJSON(github.event.inputs.payload).provisioningProfileDeveloperIdApplication }}
       - name: Upload artifact
-        if: github.event.inputs.uploadArtifact == 'true'
+        if: fromJSON(github.event.inputs.payload).uploadArtifact == 'true'
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.event.inputs.packageName }}_MacOS
+          name: ${{ fromJSON(github.event.inputs.payload).packageName }}_MacOS
           path: ${{ env.PACKAGE_NAME }}
       - name: Upload to WeTransfer
         id: transfer
@@ -381,22 +385,22 @@ jobs:
         uses: Sniddl/discord-commits@v1.3
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
-          message: "Remote CI result from **${{ github.event.inputs.repository }}**."
+          message: "Remote CI result from **${{ fromJSON(github.event.inputs.payload).repository }}**."
           embed: '{
             "author":{
-            "name":"${{ github.event.inputs.appName }} [${{ github.event.inputs.buildType }}]",
-            "url":"https://github.com/${{ github.event.inputs.repository }}"
+            "name":"${{ fromJSON(github.event.inputs.payload).appName }} [${{ fromJSON(github.event.inputs.payload).buildType }}]",
+            "url":"https://github.com/${{ fromJSON(github.event.inputs.payload).repository }}"
             },
-            "title":"${{ github.event.inputs.appName }} (${{ github.event.inputs.versionName }}) Build Result",
-            "description": "CI requested from ${{ github.event.inputs.repository }}/${{ github.event.inputs.ref }}",
+            "title":"${{ fromJSON(github.event.inputs.payload).appName }} (${{ fromJSON(github.event.inputs.payload).versionName }}) Build Result",
+            "description": "CI requested from ${{ fromJSON(github.event.inputs.payload).repository }}/${{ fromJSON(github.event.inputs.payload).ref }}",
             "url":"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
             "thumbnail":{
-            "url":"https://raw.githubusercontent.com/${{ github.event.inputs.repository }}/${{ github.event.inputs.ref }}/.github/build/linux/${{ github.event.inputs.buildType }}/icon.png"
+            "url":"https://raw.githubusercontent.com/${{ fromJSON(github.event.inputs.payload).repository }}/${{ fromJSON(github.event.inputs.payload).ref }}/.github/build/linux/${{ fromJSON(github.event.inputs.payload).buildType }}/icon.png"
             },
             "color":36863,
             "fields":[
-            {"name":"Version","value":"${{ github.event.inputs.versionString }}","inline": true},
-            {"name":"Package Name","value":"${{ github.event.inputs.packageName }}","inline": true},
+            {"name":"Version","value":"${{ fromJSON(github.event.inputs.payload).versionString }}","inline": true},
+            {"name":"Package Name","value":"${{ fromJSON(github.event.inputs.payload).packageName }}","inline": true},
             {"name":"Status","value":"**Automatic Test:** ${{ needs.auto-test.result }}\n**Bare:** ${{ needs.build-love.result }}\n**Windows:** ${{ needs.build-windows.result }}\n**Linux:** ${{ needs.build-linux.result }}\n**Android:** ${{ needs.build-android.result }}\n**MacOS:** ${{ needs.build-macos-portable.result }}"},
             {"name":"Download Links","value":"**Bare:** ${{ needs.build-love.outputs.download-url}}\n**Windows (32 Bit):** ${{ needs.build-windows.outputs.download-url-32 }}\n**Windows (64 Bit):** ${{ needs.build-windows.outputs.download-url-64 }}\n**Linux:** ${{ needs.build-linux.outputs.download-url }}\n**Android:** ${{ needs.build-android.outputs.download-url }}\n**MacOS:** ${{ needs.build-macos-portable.outputs.download-url}}"}
             ]
