@@ -106,27 +106,6 @@ runs:
         EOT
 
         node temp.js
-    - name: Build MacOS archive
-      shell: bash
-      run: |
-        mkdir -p ./love/platform/xcode/build/Debug
-        mkdir -p ./love/platform/xcode/build/Release
-        xcodebuild clean archive -quiet \
-        -project ./love/platform/xcode/love.xcodeproj \
-        -scheme love-macosx \
-        -configuration Release \
-        -archivePath ./archive.xcarchive \
-        OTHER_CFLAGS="-Wno-unused-parameter -Wno-sign-compare -Wno-conditional-uninitialized -Wno-strict-prototypes" \
-        MACOSX_DEPLOYMENT_TARGET="10.9" \
-        MARKETING_VERSION='${{ inputs.versionString }}' \
-        PRODUCT_BUNDLE_IDENTIFIER=${{ steps.process-app-name.outputs.bundle-id }}
-    - name: Export archive
-      shell: bash
-      run: |
-        xcodebuild -exportArchive \
-        -archivePath ./archive.xcarchive \
-        -exportPath ./ \
-        -exportOptionsPlist ./love/platform/xcode/macosx/macos-copy-app.plist
     - name: Create keychain and import certificate
       env:
         CERTIFICATE_FILENAME: developerID_application.p12
@@ -141,6 +120,33 @@ runs:
         security import $CERTIFICATE_FILENAME -k $KEYCHAIN_FILENAME -P "${{ inputs.APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD }}" -T /usr/bin/codesign
         security find-identity -v
         security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
+    - name: Build MacOS archive
+      env:
+        KEYCHAIN_FILENAME: CI.keychain
+        KEYCHAIN_PASSWORD: 26F-Studio-CI
+      shell: bash
+      run: |
+        mkdir -p ./love/platform/xcode/build/Debug
+        mkdir -p ./love/platform/xcode/build/Release
+        security unlock-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
+        [[ $(security find-identity -v) =~ ([0-9A-F]{40}) ]]
+        xcodebuild clean archive -quiet \
+        -project ./love/platform/xcode/love.xcodeproj \
+        -scheme love-macosx \
+        -configuration Release \
+        -archivePath ./archive.xcarchive \
+        CODE_SIGN_IDENTITY=${BASH_REMATCH[1]} \
+        MACOSX_DEPLOYMENT_TARGET="10.9" \
+        MARKETING_VERSION='${{ inputs.versionString }}' \
+        OTHER_CFLAGS="-Wno-unused-parameter -Wno-sign-compare -Wno-conditional-uninitialized -Wno-strict-prototypes" \
+        PRODUCT_BUNDLE_IDENTIFIER=${{ steps.process-app-name.outputs.bundle-id }}
+    - name: Export archive
+      shell: bash
+      run: |
+        xcodebuild -exportArchive \
+        -archivePath ./archive.xcarchive \
+        -exportPath ./ \
+        -exportOptionsPlist ./love/platform/xcode/macosx/macos-copy-app.plist
     - name: Codesign application bundle
       env:
         KEYCHAIN_FILENAME: CI.keychain
