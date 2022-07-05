@@ -1,7 +1,7 @@
 name: "26F Studio Remote CI"
 
 on:
-  workflow_dispatch:
+  repository_dispatch:
     inputs:
       repository:
         description: "Target repository (Owner/Repo)"
