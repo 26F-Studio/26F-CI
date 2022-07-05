@@ -79,10 +79,10 @@ jobs:
           payload = base64.b64decode('${{ github.event.inputs.payload }}'.encode('utf-8')).decode('utf-8')
           parameters = json.loads(payload)
           for key, value in parameters.items():
-            print(key, '->', value)
             os.system(f'echo ::set-output name={key}::"{value}"')
       - name: Display inputs
         run: |
+          PPDIA='${{ steps.process-payload.outputs.provisioningProfileDeveloperIdApplication }}'
           DISPLAY_STRING=$(cat << EOF
           repository: ${{ steps.process-payload.outputs.repository }}
           ref: ${{ steps.process-payload.outputs.ref }}
@@ -94,6 +94,7 @@ jobs:
           versionString: ${{ steps.process-payload.outputs.versionString }}
           versionCode: ${{ steps.process-payload.outputs.versionCode }}
           uploadArtifact: ${{ steps.process-payload.outputs.uploadArtifact }}
+          provisioningProfileDeveloperIdApplication: ${PPDIA:0:15}
           EOF
           )
           DISPLAY_STRING="${DISPLAY_STRING//'%'/'%25'}"
@@ -304,7 +305,6 @@ jobs:
   build-macos-portable:
     runs-on: macos-latest
     needs: [check-inputs, build-love]
-    if: needs.check-inputs.outputs.provisioningProfileDeveloperIdApplication != ''
     env:
       PACKAGE_NAME: ./${{ needs.check-inputs.outputs.packageName }}_macOS.dmg
     outputs:
