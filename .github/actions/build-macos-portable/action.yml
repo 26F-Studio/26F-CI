@@ -57,6 +57,8 @@ runs:
         mv ./love-apple-dependencies/macOS/Frameworks/ ./love/platform/xcode/macosx
         mv ./love-apple-dependencies/iOS/libraries/ ./love/platform/xcode/ios
         mv ./target.love ./love/platform/xcode/
+        mkdir -p ./love/platform/xcode/build/Debug
+        mkdir -p ./love/platform/xcode/build/Release
     - name: Process icons
       shell: bash
       run: |
@@ -75,7 +77,11 @@ runs:
 
         const pbxprojPath = './love/platform/xcode/love.xcodeproj/project.pbxproj';
         const project = xcode.project(pbxprojPath).parseSync();
-        project.updateBuildProperty('PRODUCT_NAME', '${{ steps.process-app-name.outputs.product-name }}', null, 'love-macosx')
+        project.updateBuildProperty('CODE_SIGN_IDENTITY', '"Developer ID Application"', 'Distribution', 'love-macosx')
+        project.updateBuildProperty('MACOSX_DEPLOYMENT_TARGET', '10.9', 'Distribution', 'love-macosx')
+        project.updateBuildProperty('MARKETING_VERSION', '${{ inputs.versionString }}', 'Distribution', 'love-macosx')
+        project.updateBuildProperty('PRODUCT_BUNDLE_IDENTIFIER', '${{ steps.process-app-name.outputs.bundle-id }}', 'Distribution', 'love-macosx')
+        project.updateBuildProperty('PRODUCT_NAME', '${{ steps.process-app-name.outputs.product-name }}', 'Distribution', 'love-macosx')
         const resourcesGroupKey = project.findPBXGroupKey({name: 'Resources'});
         const targetKey = project.findTargetKey('"love-macosx"')
         project.addResourceFile('./target.love', {target: targetKey}, resourcesGroupKey);
@@ -93,6 +99,7 @@ runs:
         const exportPlistPath = './love/platform/xcode/macosx/macos-copy-app.plist';
         const exportPlist = plist['parse'](fs.readFileSync(exportPlistPath, 'utf8'));
         exportPlist['method'] = 'developer-id';
+        // exportPlist['signingCertificate'] = 'Developer ID Application';
         fs.writeFileSync(exportPlistPath, plist['build'](exportPlist));
 
         const iconPath = './love/platform/xcode/Images.xcassets/OS X AppIcon.appiconset/Contents.json';
@@ -120,29 +127,21 @@ runs:
         security import $CERTIFICATE_FILENAME -k $KEYCHAIN_FILENAME -P "${{ inputs.APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD }}" -T /usr/bin/codesign
         security find-identity -v
         security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
-    - name: Build MacOS archive
+    - name: Build MacOS app
       env:
         KEYCHAIN_FILENAME: CI.keychain
         KEYCHAIN_PASSWORD: 26F-Studio-CI
       shell: bash
       run: |
-        mkdir -p ./love/platform/xcode/build/Debug
-        mkdir -p ./love/platform/xcode/build/Release
         security unlock-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
-        [[ $(security find-identity -v) =~ ([0-9A-F]{40}) ]]
+
         xcodebuild clean archive -quiet \
         -project ./love/platform/xcode/love.xcodeproj \
         -scheme love-macosx \
-        -configuration Release \
+        -configuration Distribution \
         -archivePath ./archive.xcarchive \
-        CODE_SIGN_IDENTITY=${BASH_REMATCH[1]} \
-        MACOSX_DEPLOYMENT_TARGET="10.9" \
-        MARKETING_VERSION='${{ inputs.versionString }}' \
-        OTHER_CFLAGS="-Wno-unused-parameter -Wno-sign-compare -Wno-conditional-uninitialized -Wno-strict-prototypes" \
-        PRODUCT_BUNDLE_IDENTIFIER=${{ steps.process-app-name.outputs.bundle-id }}
-    - name: Export archive
-      shell: bash
-      run: |
+        OTHER_CFLAGS="-Wno-unused-parameter -Wno-sign-compare -Wno-conditional-uninitialized -Wno-strict-prototypes"
+
         xcodebuild -exportArchive \
         -archivePath ./archive.xcarchive \
         -exportPath ./ \
