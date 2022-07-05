@@ -76,7 +76,7 @@ jobs:
           import base64
           import json
           import os
-          payload = base64.b64decode('${{ github.event.inputs.payload }}'.encode('utf-8')).decode('utf-8'))
+          payload = base64.b64decode('${{ github.event.inputs.payload }}'.encode('utf-8')).decode('utf-8')
           print(payload)
           parameters = json.loads(payload)
           print(parameters)
