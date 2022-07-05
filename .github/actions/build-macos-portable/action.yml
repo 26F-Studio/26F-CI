@@ -162,14 +162,15 @@ runs:
       run: |
         brew install create-dmg
         create-dmg \
-        --app-drop-link 712 250 \
-        --background "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.jpg" \
+        --app-drop-link 731 310 \
+        --background "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.png" \
         --hide-extension "${{ steps.process-app-name.outputs.product-name }}.app" \
-        --icon "${{ steps.process-app-name.outputs.product-name }}.app" 317 250 \
-        --icon-size 144 \
+        --icon "${{ steps.process-app-name.outputs.product-name }}.app" 284 310 \
+        --icon-size 128 \
+        --text-size 12 \
         --volicon "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.icns" \
         --volname "${{ steps.process-app-name.outputs.product-name }}" \
-        --window-pos 160 90 \
+        --window-pos 200 120 \
         --window-size 1024 604 \
         "${{ inputs.output }}" \
         "${{ steps.process-app-name.outputs.product-name }}.app"
