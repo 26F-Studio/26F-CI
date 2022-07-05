@@ -47,9 +47,11 @@ runs:
         os.system('echo ::set-output name=bundle-id::org.26f-studio.' + re.sub(r'[^A-Za-z0-9]+', '-', '${{ inputs.appName }}'))
         os.system('echo ::set-output name=product-name::' + re.sub(r'[^A-Za-z0-9]+', '_', '${{ inputs.appName }}'))
     - name: Hide provisioning profile
+      env:
+        PROVISIONING_PROFILE: ${{ inputs.APPLE_PP_DEVELOPER_ID_APPLICATION }}
       shell: bash
       run: |
-        echo "::add-mask::${{ inputs.APPLE_PP_DEVELOPER_ID_APPLICATION }}" 
+        echo "::add-mask::$PROVISIONING_PROFILE"
     - name: Clone love
       shell: bash
       run: |
@@ -152,7 +154,8 @@ runs:
         -scheme love-macosx \
         -configuration Distribution \
         -archivePath ./archive.xcarchive \
-        OTHER_CFLAGS="-Wno-unused-parameter -Wno-sign-compare -Wno-conditional-uninitialized -Wno-strict-prototypes"
+        OTHER_CFLAGS="-Wno-unused-parameter -Wno-sign-compare -Wno-conditional-uninitialized -Wno-strict-prototypes" \
+        PROVISIONING_PROFILE_SPECIFIER="Developer ID Application (Techmino-Galaxy)"
 
         xcodebuild -exportArchive \
         -archivePath ./archive.xcarchive \
