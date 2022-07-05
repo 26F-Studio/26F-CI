@@ -31,6 +31,9 @@ inputs:
   APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD:
     required: true
     description: "Developer ID Application certificate password"
+  APPLE_DEVELOPER_TEAM_ID:
+    required: true
+    description: "Apple Developer Team ID"
   APPLE_PP_DEVELOPER_ID_APPLICATION:
     required: true
     description: "Developer ID Application provisioning profile"
@@ -46,12 +49,6 @@ runs:
         import re
         os.system('echo ::set-output name=bundle-id::org.26f-studio.' + re.sub(r'[^A-Za-z0-9]+', '-', '${{ inputs.appName }}'))
         os.system('echo ::set-output name=product-name::' + re.sub(r'[^A-Za-z0-9]+', '_', '${{ inputs.appName }}'))
-    - name: Hide provisioning profile
-      env:
-        PROVISIONING_PROFILE: ${{ inputs.APPLE_PP_DEVELOPER_ID_APPLICATION }}
-      shell: bash
-      run: |
-        echo "::add-mask::$PROVISIONING_PROFILE"
     - name: Clone love
       shell: bash
       run: |
@@ -74,54 +71,6 @@ runs:
         rm -rf ./love/platform/xcode/Images.xcassets/OS\ X\ AppIcon.appiconset/*.png
         iconutil -c iconset -o ./icon.iconset ${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/icon.icns
         mv -f ./icon.iconset/* ./love/platform/xcode/Images.xcassets/OS\ X\ AppIcon.appiconset/
-    - name: Modify XCode project
-      shell: bash
-      run: |
-        npm i plist xcode
-
-        cat <<EOT >> temp.js
-        const fs = require('fs');
-        const plist = require('plist');
-        const xcode = require('xcode');
-
-        const pbxprojPath = './love/platform/xcode/love.xcodeproj/project.pbxproj';
-        const project = xcode.project(pbxprojPath).parseSync();
-        project.updateBuildProperty('CODE_SIGN_IDENTITY', '"Developer ID Application"', 'Distribution', 'love-macosx')
-        project.updateBuildProperty('MACOSX_DEPLOYMENT_TARGET', '10.9', 'Distribution', 'love-macosx')
-        project.updateBuildProperty('MARKETING_VERSION', '${{ inputs.versionString }}', 'Distribution', 'love-macosx')
-        project.updateBuildProperty('PRODUCT_BUNDLE_IDENTIFIER', '${{ steps.process-app-name.outputs.bundle-id }}', 'Distribution', 'love-macosx')
-        project.updateBuildProperty('PRODUCT_NAME', '${{ steps.process-app-name.outputs.product-name }}', 'Distribution', 'love-macosx')
-        const resourcesGroupKey = project.findPBXGroupKey({name: 'Resources'});
-        const targetKey = project.findTargetKey('"love-macosx"')
-        project.addResourceFile('./target.love', {target: targetKey}, resourcesGroupKey);
-        fs.writeFileSync(pbxprojPath, project.writeSync());
-
-        const plistPath = './love/platform/xcode/macosx/love-macosx.plist';
-        const parsed = plist['parse'](fs.readFileSync(plistPath, 'utf8'));
-        parsed['CFBundleExecutable'] = '${{ steps.process-app-name.outputs.product-name }}';
-        parsed['CFBundleName'] = '${{ inputs.appName }}';
-        parsed['NSHumanReadableCopyright'] = 'Copyright © 2019-' + new Date().getFullYear() + ' 26F-Studio. Some Rights Reserved.';
-        delete parsed['CFBundleDocumentTypes'];
-        delete parsed['UTExportedTypeDeclarations'];
-        fs.writeFileSync(plistPath, plist['build'](parsed));
-
-        const exportPlistPath = './love/platform/xcode/macosx/macos-copy-app.plist';
-        const exportPlist = plist['parse'](fs.readFileSync(exportPlistPath, 'utf8'));
-        exportPlist['method'] = 'developer-id';
-        // exportPlist['signingCertificate'] = 'Developer ID Application';
-        fs.writeFileSync(exportPlistPath, plist['build'](exportPlist));
-
-        const iconPath = './love/platform/xcode/Images.xcassets/OS X AppIcon.appiconset/Contents.json';
-        const iconContents = JSON.parse(fs.readFileSync(iconPath, 'utf8'));
-        iconContents.images.forEach(image => {
-            image.filename = 'icon_' + image.size + (image.scale === '2x' ? '@2x' : '') + '.png';
-        });
-        fs.writeFileSync(iconPath, JSON.stringify(iconContents));
-
-        console.info('Project info updated.');
-        EOT
-
-        node temp.js
     - name: Create keychain, import certificate and provisioning profile
       env:
         CERTIFICATE_FILENAME: developerID_application.p12
@@ -141,6 +90,59 @@ runs:
         echo "${{ inputs.APPLE_CERT_DEVELOPER_ID_APPLICATION }}" | base64 --decode > $PROVISIONING_PROFILE_FILENAME
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
         cp $PROVISIONING_PROFILE_FILENAME ~/Library/MobileDevice/Provisioning\ Profiles
+    - name: Modify XCode project
+      shell: bash
+      run: |
+        npm i plist xcode
+
+        cat <<EOT >> temp.js
+        const fs = require('fs');
+        const plist = require('plist');
+        const xcode = require('xcode');
+
+        const pbxprojPath = './love/platform/xcode/love.xcodeproj/project.pbxproj';
+        const project = xcode.project(pbxprojPath).parseSync();
+        project.updateBuildProperty('MACOSX_DEPLOYMENT_TARGET', '10.9', 'Release', 'love-macosx')
+        project.updateBuildProperty('MARKETING_VERSION', '${{ inputs.versionString }}', 'Release', 'love-macosx')
+        project.updateBuildProperty('PRODUCT_BUNDLE_IDENTIFIER', '${{ steps.process-app-name.outputs.bundle-id }}', 'Release', 'love-macosx')
+        project.updateBuildProperty('PRODUCT_NAME', '${{ steps.process-app-name.outputs.product-name }}', 'Release', 'love-macosx')
+        const resourcesGroupKey = project.findPBXGroupKey({name: 'Resources'});
+        const targetKey = project.findTargetKey('"love-macosx"')
+        project.addResourceFile('./target.love', {target: targetKey}, resourcesGroupKey);
+        fs.writeFileSync(pbxprojPath, project.writeSync());
+
+        const plistPath = './love/platform/xcode/macosx/love-macosx.plist';
+        const parsed = plist['parse'](fs.readFileSync(plistPath, 'utf8'));
+        parsed['CFBundleExecutable'] = '${{ steps.process-app-name.outputs.product-name }}';
+        parsed['CFBundleName'] = '${{ inputs.appName }}';
+        parsed['NSHumanReadableCopyright'] = 'Copyright © 2019-' + new Date().getFullYear() + ' 26F-Studio. Some Rights Reserved.';
+        delete parsed['CFBundleDocumentTypes'];
+        delete parsed['UTExportedTypeDeclarations'];
+        fs.writeFileSync(plistPath, plist['build'](parsed));
+
+        const exportPlistPath = './love/platform/xcode/macosx/macos-copy-app.plist';
+        const exportPlist = plist['parse'](fs.readFileSync(exportPlistPath, 'utf8'));
+        exportPlist['method'] = 'developer-id';
+        provisioningProfile = fs.readFileSync('./developerID_application.provisionprofile', 'utf8');
+        uuid = provisioningProfile.substr(provisioningProfile.indexOf('>', provisioningProfile.indexOf('UUID') + 10) + 1, 36);
+        exportPlist['provisioningProfiles'] = {
+            '${{ steps.process-app-name.outputs.bundle-id }}': uuid
+        };
+        exportPlist['signingCertificate'] = 'Developer ID Application';
+        exportPlist['teamID'] = '${{ inputs.APPLE_DEVELOPER_TEAM_ID }}';
+        fs.writeFileSync(exportPlistPath, plist['build'](exportPlist));
+
+        const iconPath = './love/platform/xcode/Images.xcassets/OS X AppIcon.appiconset/Contents.json';
+        const iconContents = JSON.parse(fs.readFileSync(iconPath, 'utf8'));
+        iconContents.images.forEach(image => {
+            image.filename = 'icon_' + image.size + (image.scale === '2x' ? '@2x' : '') + '.png';
+        });
+        fs.writeFileSync(iconPath, JSON.stringify(iconContents));
+
+        console.info('Project info updated.');
+        EOT
+
+        node temp.js
     - name: Build MacOS app
       env:
         KEYCHAIN_FILENAME: CI.keychain
@@ -152,10 +154,9 @@ runs:
         xcodebuild clean archive -quiet \
         -project ./love/platform/xcode/love.xcodeproj \
         -scheme love-macosx \
-        -configuration Distribution \
+        -configuration Release \
         -archivePath ./archive.xcarchive \
-        OTHER_CFLAGS="-Wno-unused-parameter -Wno-sign-compare -Wno-conditional-uninitialized -Wno-strict-prototypes" \
-        PROVISIONING_PROFILE_SPECIFIER="Developer ID Application (Techmino-Galaxy)"
+        OTHER_CFLAGS="-Wno-unused-parameter -Wno-sign-compare -Wno-conditional-uninitialized -Wno-strict-prototypes"
 
         xcodebuild -exportArchive \
         -archivePath ./archive.xcarchive \

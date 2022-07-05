@@ -81,8 +81,10 @@ jobs:
           for key, value in parameters.items():
             os.system(f'echo ::set-output name={key}::"{value}"')
       - name: Display inputs
+        env:
+          PROVISIONING_PROFILE: ${{ steps.process-payload.outputs.provisioningProfileDeveloperIdApplication }}
         run: |
-          PPDIA='${{ steps.process-payload.outputs.provisioningProfileDeveloperIdApplication }}'
+          echo "::add-mask::$PROVISIONING_PROFILE"
           DISPLAY_STRING=$(cat << EOF
           repository: ${{ steps.process-payload.outputs.repository }}
           ref: ${{ steps.process-payload.outputs.ref }}
@@ -94,7 +96,7 @@ jobs:
           versionString: ${{ steps.process-payload.outputs.versionString }}
           versionCode: ${{ steps.process-payload.outputs.versionCode }}
           uploadArtifact: ${{ steps.process-payload.outputs.uploadArtifact }}
-          provisioningProfileDeveloperIdApplication: ${PPDIA:0:15}
+          provisioningProfileDeveloperIdApplication: ${PROVISIONING_PROFILE:0:15}
           EOF
           )
           DISPLAY_STRING="${DISPLAY_STRING//'%'/'%25'}"
@@ -336,6 +338,7 @@ jobs:
           APPLE_ACCOUNT_USERNAME: ${{ secrets.APPLE_ACCOUNT_USERNAME }}
           APPLE_CERT_DEVELOPER_ID_APPLICATION: ${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION }}
           APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD: ${{ secrets.APPLE_CERT_DEVELOPER_ID_APPLICATION_PWD }}
+          APPLE_DEVELOPER_TEAM_ID: ${{ secrets.APPLE_DEVELOPER_TEAM_ID }}
           APPLE_PP_DEVELOPER_ID_APPLICATION: ${{ needs.check-inputs.outputs.provisioningProfileDeveloperIdApplication }}
       - name: Upload artifact
         if: needs.check-inputs.outputs.uploadArtifact == 'true'
