@@ -203,6 +203,7 @@ runs:
         primary-bundle-id: ${{ steps.process-app-name.outputs.bundle-id }}
         appstore-connect-username: ${{ inputs.APPLE_ACCOUNT_USERNAME }}
         appstore-connect-password: ${{ inputs.APPLE_ACCOUNT_PASSWORD }}
+        verbose: true
     # - name: Create dmg file
     #   shell: bash
     #   run: |
