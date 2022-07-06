@@ -69,6 +69,10 @@ jobs:
       uploadArtifact: ${{ steps.process-payload.outputs.uploadArtifact }}
       provisioningProfileDeveloperIdApplication: ${{ steps.process-payload.outputs.provisioningProfileDeveloperIdApplication }}
     steps:
+      - name: Mask payload
+        shell: bash
+        run: |
+          echo '::add-mask::${{ github.event.inputs.payload }}'
       - name: Process base64 payload
         id: process-payload
         shell: python3 {0}
@@ -78,13 +82,12 @@ jobs:
           import os
           payload = base64.b64decode('${{ github.event.inputs.payload }}'.encode('utf-8')).decode('utf-8')
           parameters = json.loads(payload)
+          os.system('echo ::add-mask::' + parameters['provisioningProfileDeveloperIdApplication'])
           for key, value in parameters.items():
             os.system(f'echo ::set-output name={key}::"{value}"')
       - name: Display inputs
-        env:
-          PROVISIONING_PROFILE: ${{ steps.process-payload.outputs.provisioningProfileDeveloperIdApplication }}
         run: |
-          echo "::add-mask::$PROVISIONING_PROFILE"
+          PROVISIONING_PROFILE=${{ steps.process-payload.outputs.provisioningProfileDeveloperIdApplication }}
           DISPLAY_STRING=$(cat << EOF
           repository: ${{ steps.process-payload.outputs.repository }}
           ref: ${{ steps.process-payload.outputs.ref }}
