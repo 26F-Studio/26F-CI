@@ -311,7 +311,7 @@ jobs:
     runs-on: macos-latest
     needs: [check-inputs, build-love]
     env:
-      PACKAGE_NAME: ./${{ needs.check-inputs.outputs.packageName }}_macOS.dmg
+      PACKAGE_NAME: ./${{ needs.check-inputs.outputs.packageName }}_macOS.zip
     outputs:
       download-url: ${{ steps.transfer.outputs.download-url }}
     steps:

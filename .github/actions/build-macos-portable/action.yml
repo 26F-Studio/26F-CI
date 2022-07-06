@@ -105,21 +105,35 @@ runs:
         provisioningProfile = fs.readFileSync('./developerID_application.provisionprofile', 'utf8');
         uuid = provisioningProfile.substr(provisioningProfile.indexOf('>', provisioningProfile.indexOf('UUID') + 10) + 1, 36);
 
-        const pbxprojPath = './love/platform/xcode/love.xcodeproj/project.pbxproj';
-        const project = xcode.project(pbxprojPath).parseSync();
-        const buildType = 'Distribution'
-        const buildTarget = 'love-macosx'
-        project.updateBuildProperty('CODE_SIGN_IDENTITY', '"Developer ID Application"', buildType, buildTarget);
-        project.updateBuildProperty('DEVELOPMENT_TEAM', '${{ inputs.APPLE_DEVELOPER_TEAM_ID }}', buildType, buildTarget);
-        project.updateBuildProperty('MACOSX_DEPLOYMENT_TARGET', '10.9', buildType, buildTarget);
-        project.updateBuildProperty('MARKETING_VERSION', '${{ inputs.versionString }}', buildType, buildTarget);
-        project.updateBuildProperty('PRODUCT_BUNDLE_IDENTIFIER', '${{ steps.process-app-name.outputs.bundle-id }}', buildType, buildTarget);
-        project.updateBuildProperty('PRODUCT_NAME', '${{ steps.process-app-name.outputs.product-name }}', buildType, buildTarget);
-        project.updateBuildProperty('PROVISIONING_PROFILE', 'uuid', buildType, buildTarget);
-        const resourcesGroupKey = project.findPBXGroupKey({name: 'Resources'});
-        const targetKey = project.findTargetKey('"love-macosx"');
-        project.addResourceFile('./target.love', {target: targetKey}, resourcesGroupKey);
-        fs.writeFileSync(pbxprojPath, project.writeSync());
+        const configuration = 'Release'
+
+        const liblovePbxprojPath = './love/platform/xcode/liblove.xcodeproj/project.pbxproj';
+        const libloveProject = xcode.project(liblovePbxprojPath).parseSync();
+        const libloveTarget = 'liblove-macosx'
+        // libloveProject.updateBuildProperty('CODE_SIGN_IDENTITY', '"Developer ID Application"', libloveConfiguration, libloveTarget);
+        // libloveProject.updateBuildProperty('DEVELOPMENT_TEAM', '${{ inputs.APPLE_DEVELOPER_TEAM_ID }}', libloveConfiguration, libloveTarget);
+        libloveProject.updateBuildProperty('MACOSX_DEPLOYMENT_TARGET', '10.9', configuration, libloveTarget);
+        // libloveProject.updateBuildProperty('PRODUCT_BUNDLE_IDENTIFIER', '${{ steps.process-app-name.outputs.bundle-id }}', libloveConfiguration, libloveTarget);
+        // libloveProject.updateBuildProperty('PRODUCT_NAME', '${{ steps.process-app-name.outputs.product-name }}', libloveConfiguration, libloveTarget);
+        // libloveProject.updateBuildProperty('PROVISIONING_PROFILE', 'uuid', libloveConfiguration, libloveTarget);
+        fs.writeFileSync(liblovePbxprojPath, libloveProject.writeSync());
+
+        const lovePbxprojPath = './love/platform/xcode/love.xcodeproj/project.pbxproj';
+        const loveProject = xcode.project(lovePbxprojPath).parseSync();
+        const loveTarget = 'love-macosx'
+        loveProject.updateBuildProperty('CODE_SIGN_IDENTITY', '"Developer ID Application"', configuration, loveTarget);
+        loveProject.updateBuildProperty('DEVELOPMENT_TEAM', '${{ inputs.APPLE_DEVELOPER_TEAM_ID }}', configuration, loveTarget);
+        loveProject.updateBuildProperty('MACOSX_DEPLOYMENT_TARGET', '10.9', configuration, loveTarget);
+        loveProject.updateBuildProperty('MARKETING_VERSION', '${{ inputs.versionString }}', configuration, loveTarget);
+        loveProject.updateBuildProperty('PRODUCT_BUNDLE_IDENTIFIER', '${{ steps.process-app-name.outputs.bundle-id }}', configuration, loveTarget);
+        loveProject.updateBuildProperty('PRODUCT_NAME', '${{ steps.process-app-name.outputs.product-name }}', configuration, loveTarget);
+        loveProject.updateBuildProperty('PROVISIONING_PROFILE', 'uuid', configuration, loveTarget);
+        loveProject.addResourceFile(
+            './target.love',
+            {target: loveProject.findTargetKey('"love-macosx"')},
+            loveProject.findPBXGroupKey({name: 'Resources'})
+        );
+        fs.writeFileSync(lovePbxprojPath, loveProject.writeSync());
 
         const plistPath = './love/platform/xcode/macosx/love-macosx.plist';
         const parsed = plist['parse'](fs.readFileSync(plistPath, 'utf8'));
@@ -134,7 +148,7 @@ runs:
         const exportPlist = plist['parse'](fs.readFileSync(exportPlistPath, 'utf8'));
         exportPlist['method'] = 'developer-id';
         exportPlist['provisioningProfiles'] = {'${{ steps.process-app-name.outputs.bundle-id }}': uuid};
-        exportPlist['signingCertificate'] = 'Developer ID Application';
+        // exportPlist['signingCertificate'] = 'Developer ID Application';
         exportPlist['teamID'] = '${{ inputs.APPLE_DEVELOPER_TEAM_ID }}';
         fs.writeFileSync(exportPlistPath, plist['build'](exportPlist));
 
@@ -146,7 +160,6 @@ runs:
         fs.writeFileSync(iconPath, JSON.stringify(iconContents));
 
         console.info('Project info updated.');
-
         EOT
 
         node temp.js
@@ -161,7 +174,7 @@ runs:
         xcodebuild clean archive -quiet \
         -project ./love/platform/xcode/love.xcodeproj \
         -scheme love-macosx \
-        -configuration Distribution \
+        -configuration Release \
         -archivePath ./archive.xcarchive \
         OTHER_CFLAGS="-Wno-unused-parameter -Wno-sign-compare -Wno-conditional-uninitialized -Wno-strict-prototypes"
 
@@ -179,7 +192,7 @@ runs:
     #     [[ $(security find-identity -v) =~ ([0-9A-F]{40}) ]]
     #     codesign --deep \
     #     --entitlements ./love/platform/xcode/love.entitlements \
-    #     --force --strict --timestamp \
+    #     --force --generate-entitlement-der --strict --timestamp \
     #     --options runtime \
     #     -s ${BASH_REMATCH[1]} \
     #     ./${{ steps.process-app-name.outputs.product-name }}.app -v
@@ -190,49 +203,51 @@ runs:
         primary-bundle-id: ${{ steps.process-app-name.outputs.bundle-id }}
         appstore-connect-username: ${{ inputs.APPLE_ACCOUNT_USERNAME }}
         appstore-connect-password: ${{ inputs.APPLE_ACCOUNT_PASSWORD }}
-    - name: Create dmg file
-      shell: bash
-      run: |
-        brew install create-dmg
-        create-dmg \
-        --app-drop-link 734 313 \
-        --background "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.png" \
-        --hide-extension "${{ steps.process-app-name.outputs.product-name }}.app" \
-        --icon "${{ steps.process-app-name.outputs.product-name }}.app" 287 313 \
-        --icon-size 128 \
-        --text-size 12 \
-        --volicon "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.icns" \
-        --volname "${{ steps.process-app-name.outputs.product-name }}" \
-        --window-pos 200 120 \
-        --window-size 1024 604 \
-        "${{ inputs.output }}" \
-        "${{ steps.process-app-name.outputs.product-name }}.app"
-    - name: Codesign dmg file
-      env:
-        KEYCHAIN_FILENAME: CI.keychain
-        KEYCHAIN_PASSWORD: 26F-Studio-CI
-      shell: bash
-      run: |
-        security unlock-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
-        [[ $(security find-identity -v) =~ ([0-9A-F]{40}) ]]
-        codesign --deep \
-        --entitlements ./love/platform/xcode/love.entitlements \
-        --force --strict --timestamp \
-        --options runtime \
-        -s ${BASH_REMATCH[1]} \
-        ./${{ inputs.output }} -v
-    - name: Notarize dmg file
-      uses: GuillaumeFalourd/xcode-notarize@v1
-      with:
-        product-path: ./${{ inputs.output }}
-        primary-bundle-id: ${{ steps.process-app-name.outputs.bundle-id }}
-        appstore-connect-username: ${{ inputs.APPLE_ACCOUNT_USERNAME }}
-        appstore-connect-password: ${{ inputs.APPLE_ACCOUNT_PASSWORD }}
-    - name: Staple dmg file
-      uses: devbotsxyz/xcode-staple@v1
-      with:
-        product-path: ./${{ inputs.output }}
+    # - name: Create dmg file
+    #   shell: bash
+    #   run: |
+    #     brew install create-dmg
+    #     create-dmg \
+    #     --app-drop-link 734 313 \
+    #     --background "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.png" \
+    #     --hide-extension "${{ steps.process-app-name.outputs.product-name }}.app" \
+    #     --icon "${{ steps.process-app-name.outputs.product-name }}.app" 287 313 \
+    #     --icon-size 128 \
+    #     --text-size 12 \
+    #     --volicon "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.icns" \
+    #     --volname "${{ steps.process-app-name.outputs.product-name }}" \
+    #     --window-pos 200 120 \
+    #     --window-size 1024 604 \
+    #     "${{ inputs.output }}" \
+    #     "${{ steps.process-app-name.outputs.product-name }}.app"
+    # - name: Codesign dmg file
+    #   env:
+    #     KEYCHAIN_FILENAME: CI.keychain
+    #     KEYCHAIN_PASSWORD: 26F-Studio-CI
+    #   shell: bash
+    #   run: |
+    #     security unlock-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
+    #     [[ $(security find-identity -v) =~ ([0-9A-F]{40}) ]]
+    #     codesign --deep \
+    #     --entitlements ./love/platform/xcode/love.entitlements \
+    #     --force --strict --timestamp \
+    #     --options runtime \
+    #     -s ${BASH_REMATCH[1]} \
+    #     ./${{ inputs.output }} -v
+    # - name: Notarize dmg file
+    #   uses: GuillaumeFalourd/xcode-notarize@v1
+    #   with:
+    #     product-path: ./${{ inputs.output }}
+    #     primary-bundle-id: ${{ steps.process-app-name.outputs.bundle-id }}
+    #     appstore-connect-username: ${{ inputs.APPLE_ACCOUNT_USERNAME }}
+    #     appstore-connect-password: ${{ inputs.APPLE_ACCOUNT_PASSWORD }}
+    # - name: Staple dmg file
+    #   uses: devbotsxyz/xcode-staple@v1
+    #   with:
+    #     product-path: ./${{ inputs.output }}
     - name: Finalize
       shell: bash
       run: |
+        codesign -dv ./${{ steps.process-app-name.outputs.product-name }}.app
+        ditto -c -k --sequesterRsrc --keepParent ./${{ steps.process-app-name.outputs.product-name }}.app ./${{ inputs.output }}
         spctl -a -t open --context context:primary-signature -vv ./${{ inputs.output }}
