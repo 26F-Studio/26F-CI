@@ -73,7 +73,7 @@ runs:
         rm -rf ./love/platform/xcode/Images.xcassets/OS\ X\ AppIcon.appiconset/*.png
         iconutil -c iconset -o ./icon.iconset ${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/icon.icns
         mv -f ./icon.iconset/* ./love/platform/xcode/Images.xcassets/OS\ X\ AppIcon.appiconset/
-    - name: Create keychain, import certificate and provisioning profile
+    - name: Create keychain and import certificate
       env:
         CERTIFICATE_FILENAME: ./developerID_application.p12
         KEYCHAIN_FILENAME: ./CI.keychain
@@ -82,7 +82,7 @@ runs:
       shell: bash
       run: |
         echo -n "${{ inputs.APPLE_CERT_DEVELOPER_ID_APPLICATION }}" | base64 --decode --output $CERTIFICATE_FILENAME
-        echo -n "${{ inputs.APPLE_PP_DEVELOPER_ID_APPLICATION }}" | base64 --decode --output $PROVISIONING_PROFILE_FILENAME
+        # echo -n "${{ inputs.APPLE_PP_DEVELOPER_ID_APPLICATION }}" | base64 --decode --output $PROVISIONING_PROFILE_FILENAME
 
         security create-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
         security set-keychain-settings -lut 21600 $KEYCHAIN_FILENAME
@@ -92,8 +92,8 @@ runs:
         security list-keychain -d user -s $KEYCHAIN_FILENAME
         security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
 
-        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-        cp $PROVISIONING_PROFILE_FILENAME ~/Library/MobileDevice/Provisioning\ Profiles
+        # mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        # cp $PROVISIONING_PROFILE_FILENAME ~/Library/MobileDevice/Provisioning\ Profiles
     - name: Modify XCode project
       shell: bash
       run: |
@@ -104,8 +104,8 @@ runs:
         const plist = require('plist');
         const xcode = require('xcode');
 
-        provisioningProfile = fs.readFileSync('./developerID_application.provisionprofile', 'utf8');
-        uuid = provisioningProfile.substr(provisioningProfile.indexOf('>', provisioningProfile.indexOf('UUID') + 10) + 1, 36);
+        // provisioningProfile = fs.readFileSync('./developerID_application.provisionprofile', 'utf8');
+        // uuid = provisioningProfile.substr(provisioningProfile.indexOf('>', provisioningProfile.indexOf('UUID') + 10) + 1, 36);
 
         const configuration = 'Release'
 
@@ -129,7 +129,7 @@ runs:
         loveProject.updateBuildProperty('MARKETING_VERSION', '${{ inputs.versionString }}', configuration, loveTarget);
         loveProject.updateBuildProperty('PRODUCT_BUNDLE_IDENTIFIER', '${{ steps.process-app-name.outputs.bundle-id }}', configuration, loveTarget);
         loveProject.updateBuildProperty('PRODUCT_NAME', '${{ steps.process-app-name.outputs.product-name }}', configuration, loveTarget);
-        loveProject.updateBuildProperty('PROVISIONING_PROFILE', 'uuid', configuration, loveTarget);
+        // loveProject.updateBuildProperty('PROVISIONING_PROFILE', 'uuid', configuration, loveTarget);
         loveProject.addResourceFile(
             './target.love',
             {target: loveProject.findTargetKey('"love-macosx"')},
@@ -149,7 +149,7 @@ runs:
         const exportPlistPath = './love/platform/xcode/macosx/macos-copy-app.plist';
         const exportPlist = plist['parse'](fs.readFileSync(exportPlistPath, 'utf8'));
         exportPlist['method'] = 'developer-id';
-        exportPlist['provisioningProfiles'] = {'${{ steps.process-app-name.outputs.bundle-id }}': uuid};
+        // exportPlist['provisioningProfiles'] = {'${{ steps.process-app-name.outputs.bundle-id }}': uuid};
         // exportPlist['signingCertificate'] = 'Developer ID Application';
         exportPlist['teamID'] = '${{ inputs.APPLE_DEVELOPER_TEAM_ID }}';
         fs.writeFileSync(exportPlistPath, plist['build'](exportPlist));
