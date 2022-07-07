@@ -228,23 +228,23 @@ runs:
         else:
             print('Notarization failed: ' + result['message'])
             exit(1)
-    # - name: Create dmg file
-    #   shell: bash
-    #   run: |
-    #     brew install create-dmg
-    #     create-dmg \
-    #     --app-drop-link 734 313 \
-    #     --background "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.png" \
-    #     --hide-extension "${{ steps.process-app-name.outputs.product-name }}.app" \
-    #     --icon "${{ steps.process-app-name.outputs.product-name }}.app" 287 313 \
-    #     --icon-size 128 \
-    #     --text-size 12 \
-    #     --volicon "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.icns" \
-    #     --volname "${{ steps.process-app-name.outputs.product-name }}" \
-    #     --window-pos 200 120 \
-    #     --window-size 1024 604 \
-    #     "${{ inputs.output }}" \
-    #     "${{ steps.process-app-name.outputs.product-name }}.app"
+    - name: Create dmg file
+      shell: bash
+      run: |
+        brew install create-dmg
+        create-dmg \
+        --app-drop-link 734 313 \
+        --background "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.png" \
+        --hide-extension "${{ steps.process-app-name.outputs.product-name }}.app" \
+        --icon "${{ steps.process-app-name.outputs.product-name }}.app" 287 313 \
+        --icon-size 128 \
+        --text-size 12 \
+        --volicon "${{ inputs.sourceDir }}/.github/build/macos/${{ inputs.buildType }}/dmg.icns" \
+        --volname "${{ steps.process-app-name.outputs.product-name }}" \
+        --window-pos 200 120 \
+        --window-size 1024 604 \
+        "${{ inputs.output }}" \
+        "${{ steps.process-app-name.outputs.product-name }}.app"
     # - name: Codesign dmg file
     #   env:
     #     KEYCHAIN_FILENAME: CI.keychain
@@ -270,10 +270,10 @@ runs:
     #   uses: devbotsxyz/xcode-staple@v1
     #   with:
     #     product-path: ./${{ inputs.output }}
-    - name: Finalize
-      shell: bash
-      run: |
-        codesign -dvvv  ./${{ steps.process-app-name.outputs.product-name }}.app
-        spctl -a -t open --context context:primary-signature -vv ./${{ steps.process-app-name.outputs.product-name }}.app
-        ditto -c -k --sequesterRsrc --keepParent ./${{ steps.process-app-name.outputs.product-name }}.app ./${{ inputs.output }}
+    # - name: Finalize
+    #   shell: bash
+    #   run: |
+    #     codesign -dvvv  ./${{ steps.process-app-name.outputs.product-name }}.app
+    #     spctl -a -t open --context context:primary-signature -vv ./${{ steps.process-app-name.outputs.product-name }}.app
+    #     ditto -c -k --sequesterRsrc --keepParent ./${{ steps.process-app-name.outputs.product-name }}.app ./${{ inputs.output }}
         
