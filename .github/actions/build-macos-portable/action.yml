@@ -216,7 +216,8 @@ runs:
                 ' --apple-id "${{ inputs.APPLE_ACCOUNT_USERNAME }}"'
                 ' --password "${{ inputs.APPLE_ACCOUNT_PASSWORD }}"'
                 ' --team-id "${{ inputs.APPLE_DEVELOPER_TEAM_ID }}"',
-                stdout=subprocess.PIPE
+                stdout=subprocess.PIPE,
+                shell=True
             ).stdout.decode('utf-8')
         )
         print(result)
