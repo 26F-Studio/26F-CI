@@ -182,28 +182,49 @@ runs:
         -archivePath ./archive.xcarchive \
         -exportPath ./ \
         -exportOptionsPlist ./love/platform/xcode/macosx/macos-copy-app.plist
-    - name: Codesign application bundle
-      env:
-        KEYCHAIN_FILENAME: CI.keychain
-        KEYCHAIN_PASSWORD: 26F-Studio-CI
-      shell: bash
-      run: |
-        security unlock-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
-        [[ $(security find-identity -v) =~ ([0-9A-F]{40}) ]]
-        codesign --deep \
-        --entitlements ./love/platform/xcode/love.entitlements \
-        --force --generate-entitlement-der --strict --timestamp \
-        --options runtime \
-        -s ${BASH_REMATCH[1]} \
-        ./${{ steps.process-app-name.outputs.product-name }}.app -v
+    # - name: Codesign application bundle
+    #   env:
+    #     KEYCHAIN_FILENAME: CI.keychain
+    #     KEYCHAIN_PASSWORD: 26F-Studio-CI
+    #   shell: bash
+    #   run: |
+    #     security unlock-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
+    #     [[ $(security find-identity -v) =~ ([0-9A-F]{40}) ]]
+    #     codesign --deep \
+    #     --entitlements ./love/platform/xcode/love.entitlements \
+    #     --force --generate-entitlement-der --strict --timestamp \
+    #     --options runtime \
+    #     -s ${BASH_REMATCH[1]} \
+    #     ./${{ steps.process-app-name.outputs.product-name }}.app -v
     - name: Notarize application bundle
-      uses: GuillaumeFalourd/xcode-notarize@v1
-      with:
-        product-path: ./${{ steps.process-app-name.outputs.product-name }}.app
-        primary-bundle-id: ${{ steps.process-app-name.outputs.bundle-id }}
-        appstore-connect-username: ${{ inputs.APPLE_ACCOUNT_USERNAME }}
-        appstore-connect-password: ${{ inputs.APPLE_ACCOUNT_PASSWORD }}
-        verbose: true
+      shell: python3 {0}
+      run: |
+        import json
+        import os
+        import subprocess
+
+        temp_filename = './forNotarize.zip'
+        os.system(
+            'ditto -c -k --sequesterRsrc --keepParent'
+            ' ./${{ steps.process-app-name.outputs.product-name }}.app ' +
+            temp_filename
+        )
+        result = json.loads(
+            subprocess.run(
+                'xcrun notarytool submit ' + temp_filename +
+                ' --output-format json --wait'
+                ' --apple-id "${{ inputs.APPLE_ACCOUNT_USERNAME }}"'
+                ' --password "${{ inputs.APPLE_ACCOUNT_PASSWORD }}"'
+                ' --team-id "${{ inputs.APPLE_DEVELOPER_TEAM_ID }}"',
+                stdout=subprocess.PIPE
+            ).stdout.decode('utf-8')
+        )
+        print(result)
+        if result['status'] == 'Accepted':
+            os.system('xcrun stapler staple ./${{ steps.process-app-name.outputs.product-name }}.app')
+        else:
+            print('Notarization failed: ' + result['message'])
+            exit(1)
     # - name: Create dmg file
     #   shell: bash
     #   run: |
@@ -249,6 +270,7 @@ runs:
     - name: Finalize
       shell: bash
       run: |
-        codesign -dv ./${{ steps.process-app-name.outputs.product-name }}.app
+        codesign -dvvv  ./${{ steps.process-app-name.outputs.product-name }}.app
+        spctl -a -t open --context context:primary-signature -vv ./${{ steps.process-app-name.outputs.product-name }}.app
         ditto -c -k --sequesterRsrc --keepParent ./${{ steps.process-app-name.outputs.product-name }}.app ./${{ inputs.output }}
-        spctl -a -t open --context context:primary-signature -vv ./${{ inputs.output }}
+        
