@@ -49,10 +49,12 @@ runs:
         import re
         os.system('echo ::set-output name=bundle-id::org.26f-studio.' + re.sub(r'[^A-Za-z0-9]+', '-', '${{ inputs.appName }}'))
         os.system('echo ::set-output name=product-name::' + re.sub(r'[^A-Za-z0-9]+', '_', '${{ inputs.appName }}'))
-    - name: Clone love
-      shell: bash
-      run: |
-        git clone --recurse-submodules https://github.com/love2d/love -b 11.4 --depth 1 --shallow-submodules
+    - name: Checkout love
+      uses: actions/checkout@v3
+      with: 
+        repository: love2d/love
+        ref: c35356c841976eb6f370347b81eec845d5520338
+        path: love
     - name: Download framework SDK
       uses: ./.github/actions/get-unzip
       with:
