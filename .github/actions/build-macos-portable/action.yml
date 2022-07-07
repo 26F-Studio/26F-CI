@@ -182,20 +182,20 @@ runs:
         -archivePath ./archive.xcarchive \
         -exportPath ./ \
         -exportOptionsPlist ./love/platform/xcode/macosx/macos-copy-app.plist
-    # - name: Codesign application bundle
-    #   env:
-    #     KEYCHAIN_FILENAME: CI.keychain
-    #     KEYCHAIN_PASSWORD: 26F-Studio-CI
-    #   shell: bash
-    #   run: |
-    #     security unlock-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
-    #     [[ $(security find-identity -v) =~ ([0-9A-F]{40}) ]]
-    #     codesign --deep \
-    #     --entitlements ./love/platform/xcode/love.entitlements \
-    #     --force --generate-entitlement-der --strict --timestamp \
-    #     --options runtime \
-    #     -s ${BASH_REMATCH[1]} \
-    #     ./${{ steps.process-app-name.outputs.product-name }}.app -v
+    - name: Codesign application bundle
+      env:
+        KEYCHAIN_FILENAME: CI.keychain
+        KEYCHAIN_PASSWORD: 26F-Studio-CI
+      shell: bash
+      run: |
+        security unlock-keychain -p $KEYCHAIN_PASSWORD $KEYCHAIN_FILENAME
+        [[ $(security find-identity -v) =~ ([0-9A-F]{40}) ]]
+        codesign --deep \
+        --entitlements ./love/platform/xcode/love.entitlements \
+        --force --generate-entitlement-der --strict --timestamp \
+        --options runtime \
+        -s ${BASH_REMATCH[1]} \
+        ./${{ steps.process-app-name.outputs.product-name }}.app -v
     - name: Notarize application bundle
       uses: GuillaumeFalourd/xcode-notarize@v1
       with:
